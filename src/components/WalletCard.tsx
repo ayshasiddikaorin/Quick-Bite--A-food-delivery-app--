@@ -1,12 +1,7 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import Colors from '../constants/colors';
+import React from "react";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import Colors from "../constants/colors";
 
 interface Props {
   balance: number;
@@ -26,7 +21,7 @@ const WalletCard: React.FC<Props> = ({ balance }) => {
             <Ionicons name="wallet-outline" size={20} color={Colors.primary} />
           </View>
           <View style={styles.titleBlock}>
-            <Text style={styles.cardTitle}>FoodiGo Wallet</Text>
+            <Text style={styles.cardTitle}>QuickBite Wallet</Text>
             <Text style={styles.cardSubtitle}>Available Balance</Text>
           </View>
         </View>
@@ -40,7 +35,11 @@ const WalletCard: React.FC<Props> = ({ balance }) => {
           </TouchableOpacity>
           <View style={styles.actionDivider} />
           <TouchableOpacity style={styles.actionBtn} activeOpacity={0.8}>
-            <Ionicons name="arrow-up-outline" size={14} color={Colors.primary} />
+            <Ionicons
+              name="arrow-up-outline"
+              size={14}
+              color={Colors.primary}
+            />
             <Text style={styles.actionText}>Send</Text>
           </TouchableOpacity>
           <View style={styles.actionDivider} />
@@ -57,11 +56,7 @@ const WalletCard: React.FC<Props> = ({ balance }) => {
           <View style={styles.chipLine} />
           <View style={styles.chipLine} />
         </View>
-        <Ionicons
-          name="wifi-outline"
-          size={28}
-          color={Colors.primary + '60'}
-        />
+        <Ionicons name="wifi-outline" size={28} color={Colors.primary + "60"} />
       </View>
     </TouchableOpacity>
   );
@@ -74,9 +69,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: 22,
     padding: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
+    flexDirection: "row",
+    alignItems: "center",
+    overflow: "hidden",
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.08,
@@ -86,7 +81,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.secondary,
   },
   bgCircle1: {
-    position: 'absolute',
+    position: "absolute",
     top: -20,
     right: 60,
     width: 90,
@@ -95,20 +90,20 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.secondary,
   },
   bgCircle2: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -30,
     right: -10,
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#FFF0E6',
+    backgroundColor: "#FFF0E6",
   },
   leftSection: {
     flex: 1,
   },
   iconRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
     marginBottom: 10,
   },
@@ -117,37 +112,37 @@ const styles = StyleSheet.create({
     height: 38,
     borderRadius: 12,
     backgroundColor: Colors.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   titleBlock: {
     gap: 1,
   },
   cardTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.black,
   },
   cardSubtitle: {
     fontSize: 11,
     color: Colors.gray,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   balance: {
     fontSize: 30,
-    fontWeight: '900',
+    fontWeight: "900",
     color: Colors.primary,
     marginBottom: 14,
     letterSpacing: 0.5,
   },
   actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 0,
   },
   actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -156,15 +151,15 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.primary,
   },
   actionDivider: {
     width: 8,
   },
   rightSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     paddingLeft: 12,
   },
@@ -174,13 +169,13 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: Colors.secondary,
     borderWidth: 1.5,
-    borderColor: Colors.primary + '40',
+    borderColor: Colors.primary + "40",
     padding: 5,
     gap: 5,
   },
   chipLine: {
     height: 2,
-    backgroundColor: Colors.primary + '60',
+    backgroundColor: Colors.primary + "60",
     borderRadius: 1,
   },
 });

@@ -31,7 +31,7 @@ export const userProfile: UserProfile = {
   name: 'Aysha Siddika Orin',
   email: 'ayshasiddika.study@gmail.com',
   phone: '01312939830',
-  avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&q=80',
+  avatar: 'https://www.magnific.com/premium-vector/avatar-profile-icon_20315456.htm',
   memberSince: 'Member since Jan 2023',
   totalOrders: 47,
   loyaltyPoints: 1240,

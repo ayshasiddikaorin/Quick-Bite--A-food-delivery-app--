@@ -1,13 +1,13 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   StatusBar,
-} from 'react-native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import Colors from '../constants/colors';
+} from "react-native";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import Colors from "../constants/colors";
 
 const Header: React.FC = () => {
   return (
@@ -21,7 +21,7 @@ const Header: React.FC = () => {
         </View>
         <View>
           <Text style={styles.logoText}>
-            Foodi<Text style={styles.logoAccent}>Go</Text>
+            Quick<Text style={styles.logoAccent}>Bite</Text>
           </Text>
           <Text style={styles.tagline}>Fast & Fresh Delivery</Text>
         </View>
@@ -30,13 +30,19 @@ const Header: React.FC = () => {
       {/* Right Actions */}
       <View style={styles.actions}>
         <TouchableOpacity style={styles.iconBtn} activeOpacity={0.7}>
-          <Ionicons name="notifications-outline" size={22} color={Colors.black} />
+          <Ionicons
+            name="notifications-outline"
+            size={22}
+            color={Colors.black}
+          />
           <View style={styles.badge}>
             <Text style={styles.badgeText}>3</Text>
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.iconBtn, styles.avatarBtn]} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={[styles.iconBtn, styles.avatarBtn]}
+          activeOpacity={0.7}>
           <Text style={styles.avatarText}>JD</Text>
         </TouchableOpacity>
       </View>
@@ -46,17 +52,17 @@ const Header: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 10,
     backgroundColor: Colors.white,
   },
   logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
   logoIcon: {
@@ -64,8 +70,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 12,
     backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
@@ -74,7 +80,7 @@ const styles = StyleSheet.create({
   },
   logoText: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: "800",
     color: Colors.black,
     letterSpacing: 0.3,
   },
@@ -84,12 +90,12 @@ const styles = StyleSheet.create({
   tagline: {
     fontSize: 10,
     color: Colors.gray,
-    fontWeight: '500',
+    fontWeight: "500",
     marginTop: -2,
   },
   actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
   iconBtn: {
@@ -97,27 +103,27 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 12,
     backgroundColor: Colors.lightGray,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
   },
   badge: {
-    position: 'absolute',
+    position: "absolute",
     top: -3,
     right: -3,
     width: 16,
     height: 16,
     borderRadius: 8,
     backgroundColor: Colors.badge,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 1.5,
     borderColor: Colors.white,
   },
   badgeText: {
     color: Colors.white,
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   avatarBtn: {
     backgroundColor: Colors.primaryLight,
@@ -125,7 +131,7 @@ const styles = StyleSheet.create({
   avatarText: {
     color: Colors.white,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });
 
