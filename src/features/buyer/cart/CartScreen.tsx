@@ -9,19 +9,19 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+// Alert kept for clear-cart confirmation; ActivityIndicator for loading state
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
-import CartHeader from '../components/CartHeader';
-import CartItemCard from '../components/CartItem';
-import PromoCodeCard from '../components/PromoCodeCart';
-import OrderSummary from '../components/OrderSummary';
-import EmptyCart from '../components/EmptyCart';
+import CartHeader from './CartHeader';
+import CartItemCard from './CartItem';
+import PromoCodeCard from '../../../components/PromoCodeCart';
+import OrderSummary from '../../../components/OrderSummary';
+import EmptyCart from './EmptyCart';
 
-import { CartItem } from '../types/cart';
-import { cartItems as seedData } from '../data/cartData';
+import type { CartItem } from '../../../types/index';
+import { cartItems as seedData } from '../../../data/cartData';
 import {
   getCart,
   saveCart,
@@ -29,12 +29,10 @@ import {
   increaseQuantity,
   decreaseQuantity,
   removeFromCart,
-} from '../storage/cartStorage';
-import Colors from '../constants/colors';
-import type { TabParamList } from '../navigation/AppNavigator';
+} from '../../../storage/cartStorage';
+import Colors from '../../../constants/colors';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const DELIVERY_FEE = 2.99;
 const TAX_RATE = 0.08;
 
 // Valid promo codes: code → discount percentage
@@ -44,16 +42,13 @@ const PROMO_CODES: Record<string, number> = {
   SAVE15: 15,
 };
 
-type NavProp = BottomTabNavigationProp<TabParamList>;
-
 // ─── Screen ───────────────────────────────────────────────────────────────────
 const CartScreen: React.FC = () => {
-  const navigation = useNavigation<NavProp>();
+  const navigation = useNavigation<any>();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [checkingOut, setCheckingOut] = useState(false);
 
   // ── Load cart from AsyncStorage; seed dummy data on first launch ───────────
   useEffect(() => {
@@ -61,8 +56,18 @@ const CartScreen: React.FC = () => {
       const stored = await getCart();
       if (stored.length === 0) {
         // First launch: seed with dummy data and persist
-        await saveCart(seedData);
-        setCart(seedData);
+        // Map seedData to match CartItem type from types/index
+        const mapped: CartItem[] = seedData.map((item) => ({
+          id: item.id,
+          name: item.name,
+          restaurant: item.restaurant,
+          image: item.image,
+          rating: item.rating,
+          price: item.price,
+          quantity: item.quantity,
+        }));
+        await saveCart(mapped);
+        setCart(mapped);
       } else {
         setCart(stored);
       }
@@ -129,32 +134,14 @@ const CartScreen: React.FC = () => {
   }, []);
 
   const handleCheckout = useCallback(() => {
-    setCheckingOut(true);
-    setTimeout(async () => {
-      setCheckingOut(false);
-      const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
-      Alert.alert(
-        '🎉 Order Placed!',
-        `Your order of ${totalItems} item${totalItems > 1 ? 's' : ''} was placed successfully. Total: $${total.toFixed(2)}`,
-        [
-          {
-            text: 'Great!',
-            onPress: async () => {
-              await clearCart();
-              setCart([]);
-              setDiscountPercent(0);
-            },
-          },
-        ]
-      );
-    }, 1500);
-  }, [cart]);
+    navigation.navigate('Checkout', { subtotal, discount: discountAmount, tax });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subtotal, discountAmount, tax]);
 
   // ── Calculations ──────────────────────────────────────────────────────────
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discountAmount = parseFloat(((subtotal * discountPercent) / 100).toFixed(2));
   const tax = parseFloat(((subtotal - discountAmount) * TAX_RATE).toFixed(2));
-  const total = parseFloat((subtotal - discountAmount + DELIVERY_FEE + tax).toFixed(2));
   const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
 
   // ── Loading ───────────────────────────────────────────────────────────────
@@ -205,7 +192,7 @@ const CartScreen: React.FC = () => {
                 {/* Order Summary */}
                 <OrderSummary
                   subtotal={subtotal}
-                  deliveryFee={DELIVERY_FEE}
+                  deliveryFee={0}
                   tax={tax}
                   discount={discountAmount}
                 />
@@ -219,24 +206,14 @@ const CartScreen: React.FC = () => {
           {/* Sticky Checkout Button */}
           <View style={styles.checkoutWrapper}>
             <TouchableOpacity
-              style={[styles.checkoutBtn, checkingOut && styles.checkoutBtnDisabled]}
+              style={styles.checkoutBtn}
               onPress={handleCheckout}
               activeOpacity={0.88}
-              disabled={checkingOut}
             >
-              {checkingOut ? (
-                <>
-                  <ActivityIndicator size="small" color={Colors.white} />
-                  <Text style={styles.checkoutText}>Placing Order…</Text>
-                </>
-              ) : (
-                <>
-                  <Text style={styles.checkoutText}>
-                    Checkout  •  ${total.toFixed(2)}
-                  </Text>
-                  <Ionicons name="arrow-forward" size={18} color={Colors.white} />
-                </>
-              )}
+              <Text style={styles.checkoutText}>
+                Proceed to Checkout
+              </Text>
+              <Ionicons name="arrow-forward" size={18} color={Colors.white} />
             </TouchableOpacity>
 
             {/* Clear all – below checkout */}
@@ -316,9 +293,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 12,
     elevation: 6,
-  },
-  checkoutBtnDisabled: {
-    opacity: 0.75,
   },
   checkoutText: {
     color: Colors.white,

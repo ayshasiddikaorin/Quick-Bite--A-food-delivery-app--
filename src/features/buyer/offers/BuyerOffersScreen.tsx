@@ -9,16 +9,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import OfferCard from '../components/OfferCard';
-import { offers } from '../data/dummyData';
-import Colors from '../constants/colors';
+import OfferCard from '../../../components/OfferCard';
+import { offers } from '../../../data/dummyData';
+import Colors from '../../../constants/colors';
 
-const OffersScreen: React.FC = () => {
+const BuyerOffersScreen: React.FC = () => {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
 
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <View style={styles.accent} />
@@ -53,11 +52,10 @@ const OffersScreen: React.FC = () => {
   );
 };
 
+export default BuyerOffersScreen;
+
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: Colors.white,
-  },
+  safeArea: { flex: 1, backgroundColor: Colors.white },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -67,24 +65,11 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     backgroundColor: Colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.lightGray,
+    borderBottomColor: Colors.border,
   },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  accent: {
-    width: 4,
-    height: 22,
-    borderRadius: 2,
-    backgroundColor: Colors.primary,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: Colors.black,
-  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  accent: { width: 4, height: 22, borderRadius: 2, backgroundColor: Colors.primary },
+  title: { fontSize: 22, fontWeight: '800', color: Colors.black },
   filterBtn: {
     width: 40,
     height: 40,
@@ -93,10 +78,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  list: {
-    paddingBottom: 24,
-    backgroundColor: Colors.lightGray,
-  },
+  list: { paddingBottom: 24, backgroundColor: Colors.lightGray },
   banner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -111,21 +93,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 6,
   },
-  bannerTitle: {
-    color: Colors.white,
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  bannerSub: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  cardWrapper: {
-    paddingHorizontal: 20,
-    marginBottom: 14,
-  },
+  bannerTitle: { color: Colors.white, fontSize: 18, fontWeight: '800' },
+  bannerSub: { color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '500', marginTop: 2 },
+  cardWrapper: { paddingHorizontal: 20, marginBottom: 14 },
 });
-
-export default OffersScreen;

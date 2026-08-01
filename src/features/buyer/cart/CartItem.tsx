@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import Colors from '../constants/colors';
-import { CartItem } from '../types/cart';
+import Colors from '../../../constants/colors';
+import { CartItem } from '../../../types/index';
 
 interface Props {
   item: CartItem;

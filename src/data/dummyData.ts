@@ -1,6 +1,9 @@
+// ─── Interfaces ───────────────────────────────────────────────────────────────
+
 export interface FoodItem {
   id: string;
   name: string;
+  restaurantId: string;
   restaurant: string;
   rating: number;
   reviews: number;
@@ -19,6 +22,7 @@ export interface OfferItem {
   image: string;
   bgColor: string;
   validUntil: string;
+  restaurantId: string;
 }
 
 export interface BannerItem {
@@ -27,11 +31,13 @@ export interface BannerItem {
   title: string;
   subtitle: string;
   bgColor: string;
+  restaurantId: string;
 }
 
 export interface RecommendedItem {
   id: string;
   name: string;
+  restaurantId: string;
   restaurant: string;
   rating: number;
   price: number;
@@ -41,173 +47,192 @@ export interface RecommendedItem {
   calories: number;
 }
 
-export const banners: BannerItem[] = [
+export interface RestaurantMenuItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image: string;
+  category: string;
+  isPopular?: boolean;
+  discount?: number; // % off, only when offer applies
+}
+
+export interface RestaurantData {
+  id: string;
+  name: string;
+  coverImage: string;
+  logo: string;
+  cuisine: string[];
+  rating: number;
+  reviews: number;
+  deliveryTime: string;
+  deliveryFee: number;
+  minOrder: number;
+  address: string;
+  isOpen: boolean;
+  menuCategories: string[];
+  menu: RestaurantMenuItem[];
+}
+
+// ─── Restaurants ──────────────────────────────────────────────────────────────
+
+export const restaurants: RestaurantData[] = [
   {
-    id: '1',
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80',
-    title: 'Big Burger Deal',
-    subtitle: 'Get 30% off on all burgers today!',
-    bgColor: '#FF6B35',
+    id: 'r1',
+    name: 'Burger Republic',
+    coverImage: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80',
+    logo: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&q=80',
+    cuisine: ['Burgers', 'American', 'Fast Food'],
+    rating: 4.8,
+    reviews: 1240,
+    deliveryTime: '20-30 min',
+    deliveryFee: 1.99,
+    minOrder: 8,
+    address: 'Road 12, Dhanmondi, Dhaka',
+    isOpen: true,
+    menuCategories: ['Popular', 'Burgers', 'Sides', 'Drinks', 'Desserts'],
+    menu: [
+      { id: 'm1', name: 'Classic Smash Burger', description: 'Double smashed beef patty, American cheese, pickles, onion, special sauce', price: 12.99, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80', category: 'Burgers', isPopular: true },
+      { id: 'm2', name: 'BBQ Bacon Burger', description: 'Crispy bacon, BBQ sauce, cheddar, caramelized onions, brioche bun', price: 14.99, image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400&q=80', category: 'Burgers', isPopular: true },
+      { id: 'm3', name: 'Spicy Jalapeño Burger', description: 'Beef patty, pepper jack, fresh jalapeños, chipotle mayo', price: 13.49, image: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=400&q=80', category: 'Burgers' },
+      { id: 'm4', name: 'Mushroom Swiss Burger', description: 'Sautéed mushrooms, Swiss cheese, garlic aioli, arugula', price: 13.99, image: 'https://images.unsplash.com/photo-1609167830220-7164aa360951?w=400&q=80', category: 'Burgers' },
+      { id: 'm5', name: 'Crispy Fries', description: 'Golden crispy fries with seasoning, served with dipping sauce', price: 3.99, image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&q=80', category: 'Sides', isPopular: true },
+      { id: 'm6', name: 'Onion Rings', description: 'Beer-battered onion rings, tangy ranch dip', price: 4.49, image: 'https://images.unsplash.com/photo-1639024471283-03518883512d?w=400&q=80', category: 'Sides' },
+      { id: 'm7', name: 'Cola', description: 'Chilled Coca-Cola, Pepsi or Sprite — your choice', price: 1.99, image: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=400&q=80', category: 'Drinks' },
+      { id: 'm8', name: 'Chocolate Milkshake', description: 'Thick hand-spun chocolate milkshake with whipped cream', price: 5.49, image: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400&q=80', category: 'Drinks', isPopular: true },
+      { id: 'm9', name: 'Brownie Sundae', description: 'Warm fudge brownie with vanilla ice cream and chocolate drizzle', price: 6.99, image: 'https://images.unsplash.com/photo-1519915028121-7d3463d20b13?w=400&q=80', category: 'Desserts' },
+    ],
   },
   {
-    id: '2',
-    image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80',
-    title: 'Pizza Fiesta',
-    subtitle: 'Free delivery on orders above $20',
-    bgColor: '#E85520',
+    id: 'r2',
+    name: 'Pizza Palace',
+    coverImage: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80',
+    logo: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&q=80',
+    cuisine: ['Pizza', 'Italian', 'Pasta'],
+    rating: 4.7,
+    reviews: 980,
+    deliveryTime: '25-35 min',
+    deliveryFee: 2.49,
+    minOrder: 10,
+    address: 'Road 4, Gulshan-1, Dhaka',
+    isOpen: true,
+    menuCategories: ['Popular', 'Pizzas', 'Pasta', 'Sides', 'Drinks'],
+    menu: [
+      { id: 'm1', name: 'Margherita Pizza', description: 'San Marzano tomato, fresh mozzarella, basil, extra virgin olive oil', price: 14.99, image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&q=80', category: 'Pizzas', isPopular: true },
+      { id: 'm2', name: 'Pepperoni Pizza', description: 'Loaded with premium pepperoni slices on tomato base and mozzarella', price: 16.99, image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?w=400&q=80', category: 'Pizzas', isPopular: true },
+      { id: 'm3', name: 'BBQ Chicken Pizza', description: 'Smoky BBQ sauce, grilled chicken, red onion, coriander', price: 17.49, image: 'https://images.unsplash.com/photo-1571407970349-bc81e7e96d47?w=400&q=80', category: 'Pizzas' },
+      { id: 'm4', name: 'Veggie Supreme Pizza', description: 'Bell peppers, olives, mushrooms, cherry tomatoes, feta', price: 15.99, image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=400&q=80', category: 'Pizzas' },
+      { id: 'm5', name: 'Truffle Pasta', description: 'Fresh pappardelle, truffle oil, mushrooms, parmesan', price: 16.99, image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80', category: 'Pasta', isPopular: true },
+      { id: 'm6', name: 'Spaghetti Bolognese', description: 'Slow-cooked beef ragù, parmesan, fresh basil', price: 15.49, image: 'https://images.unsplash.com/photo-1548303740-9d6de2ae5351?w=400&q=80', category: 'Pasta' },
+      { id: 'm7', name: 'Garlic Bread', description: 'Toasted ciabatta with garlic herb butter, served warm', price: 4.49, image: 'https://images.unsplash.com/photo-1619894991209-9f9694be045a?w=400&q=80', category: 'Sides' },
+      { id: 'm8', name: 'Sparkling Water', description: 'San Pellegrino or Perrier — 500ml', price: 2.49, image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&q=80', category: 'Drinks' },
+    ],
   },
   {
-    id: '3',
-    image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800&q=80',
-    title: 'Sushi Night',
-    subtitle: 'Premium sushi at special prices',
-    bgColor: '#FF8C5A',
+    id: 'r3',
+    name: 'Tokyo Garden',
+    coverImage: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800&q=80',
+    logo: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=200&q=80',
+    cuisine: ['Sushi', 'Japanese', 'Asian'],
+    rating: 4.9,
+    reviews: 1580,
+    deliveryTime: '30-40 min',
+    deliveryFee: 2.99,
+    minOrder: 15,
+    address: 'Road 27, Banani, Dhaka',
+    isOpen: true,
+    menuCategories: ['Popular', 'Rolls', 'Nigiri', 'Ramen', 'Sides', 'Drinks'],
+    menu: [
+      { id: 'm1', name: 'Dragon Roll', description: 'Shrimp tempura, avocado, cucumber, tobiko, eel sauce', price: 18.99, image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&q=80', category: 'Rolls', isPopular: true },
+      { id: 'm2', name: 'Spicy Tuna Roll', description: 'Bluefin tuna, spicy mayo, cucumber, sesame', price: 16.99, image: 'https://images.unsplash.com/photo-1617196034874-4f0a67893e58?w=400&q=80', category: 'Rolls', isPopular: true },
+      { id: 'm3', name: 'Rainbow Roll', description: 'California roll topped with assorted sashimi and avocado', price: 21.99, image: 'https://images.unsplash.com/photo-1559410545-0bdcd187e0a6?w=400&q=80', category: 'Rolls' },
+      { id: 'm4', name: 'Salmon Nigiri (2pc)', description: 'Hand-pressed sushi rice topped with fresh Atlantic salmon', price: 8.99, image: 'https://images.unsplash.com/photo-1534482421-64566f976cfa?w=400&q=80', category: 'Nigiri', isPopular: true },
+      { id: 'm5', name: 'Tonkotsu Ramen', description: 'Rich pork bone broth, chashu pork, soft egg, nori, menma', price: 17.99, image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&q=80', category: 'Ramen', isPopular: true },
+      { id: 'm6', name: 'Spicy Miso Ramen', description: 'Spicy miso broth, corn, butter, ground pork, bean sprouts', price: 16.99, image: 'https://images.unsplash.com/photo-1557872943-16a5ac26437e?w=400&q=80', category: 'Ramen' },
+      { id: 'm7', name: 'Edamame', description: 'Steamed salted edamame beans', price: 4.99, image: 'https://images.unsplash.com/photo-1615361200141-f45040f367be?w=400&q=80', category: 'Sides' },
+      { id: 'm8', name: 'Miso Soup', description: 'Traditional dashi broth with tofu, wakame, spring onion', price: 3.49, image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80', category: 'Sides' },
+      { id: 'm9', name: 'Matcha Latte', description: 'Ceremonial grade matcha with steamed oat milk', price: 5.49, image: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=400&q=80', category: 'Drinks' },
+    ],
   },
   {
-    id: '4',
-    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=800&q=80',
-    title: 'Healthy Bowls',
-    subtitle: 'Eat fresh, stay healthy!',
-    bgColor: '#4CAF50',
+    id: 'r4',
+    name: 'Taco Loco',
+    coverImage: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800&q=80',
+    logo: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=200&q=80',
+    cuisine: ['Mexican', 'Tacos', 'Burritos'],
+    rating: 4.6,
+    reviews: 720,
+    deliveryTime: '15-25 min',
+    deliveryFee: 1.49,
+    minOrder: 6,
+    address: 'Road 9, Mirpur-2, Dhaka',
+    isOpen: true,
+    menuCategories: ['Popular', 'Tacos', 'Burritos', 'Sides', 'Drinks'],
+    menu: [
+      { id: 'm1', name: 'Chicken Tacos (3pc)', description: 'Grilled chicken, pico de gallo, guacamole, sour cream, flour tortilla', price: 9.99, image: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&q=80', category: 'Tacos', isPopular: true },
+      { id: 'm2', name: 'Beef Tacos (3pc)', description: 'Seasoned ground beef, jalapeños, cheddar, lime crema', price: 10.99, image: 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?w=400&q=80', category: 'Tacos', isPopular: true },
+      { id: 'm3', name: 'Shrimp Tacos (3pc)', description: 'Grilled shrimp, mango salsa, cabbage slaw, chipotle sauce', price: 12.99, image: 'https://images.unsplash.com/photo-1611250188496-e966043a0629?w=400&q=80', category: 'Tacos' },
+      { id: 'm4', name: 'Chicken Burrito', description: 'Large flour tortilla with rice, beans, chicken, cheese, salsa', price: 11.99, image: 'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=400&q=80', category: 'Burritos', isPopular: true },
+      { id: 'm5', name: 'Beef Burrito Bowl', description: 'Cilantro lime rice, black beans, beef, guacamole, sour cream', price: 12.49, image: 'https://images.unsplash.com/photo-1543352634-a1c51d9f1fa7?w=400&q=80', category: 'Burritos' },
+      { id: 'm6', name: 'Nachos Grande', description: 'Tortilla chips, melted cheese, jalapeños, guacamole, salsa', price: 7.99, image: 'https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?w=400&q=80', category: 'Sides', isPopular: true },
+      { id: 'm7', name: 'Mexican Horchata', description: 'Chilled rice milk with cinnamon and vanilla', price: 3.49, image: 'https://images.unsplash.com/photo-1497534446932-c925b458314e?w=400&q=80', category: 'Drinks' },
+    ],
+  },
+  {
+    id: 'r5',
+    name: 'Thai Orchid',
+    coverImage: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80',
+    logo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=200&q=80',
+    cuisine: ['Thai', 'Asian', 'Noodles'],
+    rating: 4.7,
+    reviews: 860,
+    deliveryTime: '25-35 min',
+    deliveryFee: 1.99,
+    minOrder: 10,
+    address: 'Road 17, Uttara Sector-3, Dhaka',
+    isOpen: true,
+    menuCategories: ['Popular', 'Noodles', 'Curries', 'Rice', 'Sides', 'Drinks'],
+    menu: [
+      { id: 'm1', name: 'Pad Thai Noodles', description: 'Rice noodles, egg, tofu or shrimp, bean sprouts, peanuts, lime', price: 13.99, image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80', category: 'Noodles', isPopular: true },
+      { id: 'm2', name: 'Green Curry', description: 'Coconut milk, green chilli paste, Thai eggplant, kaffir lime, jasmine rice', price: 14.49, image: 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?w=400&q=80', category: 'Curries', isPopular: true },
+      { id: 'm3', name: 'Massaman Beef Curry', description: 'Slow-cooked beef, potato, peanuts, coconut cream, jasmine rice', price: 15.99, image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80', category: 'Curries' },
+      { id: 'm4', name: 'Basil Fried Rice', description: 'Wok-fried jasmine rice, holy basil, egg, chilli, fish sauce', price: 12.99, image: 'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&q=80', category: 'Rice', isPopular: true },
+      { id: 'm5', name: 'Tom Yum Soup', description: 'Spicy lemongrass broth, mushrooms, shrimp, galangal, lime leaves', price: 9.99, image: 'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=400&q=80', category: 'Sides' },
+      { id: 'm6', name: 'Spring Rolls (4pc)', description: 'Crispy vegetable spring rolls with sweet chilli dipping sauce', price: 6.99, image: 'https://images.unsplash.com/photo-1541014741259-de529411b96a?w=400&q=80', category: 'Sides', isPopular: true },
+      { id: 'm7', name: 'Thai Iced Tea', description: 'Strong-brewed Thai tea with condensed milk over ice', price: 4.49, image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80', category: 'Drinks' },
+    ],
   },
 ];
+
+// ─── Food Items (with restaurantId) ──────────────────────────────────────────
 
 export const popularFoods: FoodItem[] = [
-  {
-    id: '1',
-    name: 'Classic Smash Burger',
-    restaurant: 'Burger Republic',
-    rating: 4.8,
-    reviews: 320,
-    price: 12.99,
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80',
-    category: 'Burgers',
-    isFavorite: true,
-    deliveryTime: '20-30 min',
-  },
-  {
-    id: '2',
-    name: 'Margherita Pizza',
-    restaurant: 'Pizza Palace',
-    rating: 4.7,
-    reviews: 215,
-    price: 14.99,
-    image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&q=80',
-    category: 'Pizza',
-    isFavorite: false,
-    deliveryTime: '25-35 min',
-  },
-  {
-    id: '3',
-    name: 'Dragon Roll Sushi',
-    restaurant: 'Tokyo Garden',
-    rating: 4.9,
-    reviews: 410,
-    price: 18.99,
-    image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&q=80',
-    category: 'Sushi',
-    isFavorite: true,
-    deliveryTime: '30-40 min',
-  },
-  {
-    id: '4',
-    name: 'Chicken Tacos',
-    restaurant: 'Taco Loco',
-    rating: 4.6,
-    reviews: 178,
-    price: 9.99,
-    image: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&q=80',
-    category: 'Mexican',
-    isFavorite: false,
-    deliveryTime: '15-25 min',
-  },
-  {
-    id: '5',
-    name: 'Pad Thai Noodles',
-    restaurant: 'Thai Orchid',
-    rating: 4.7,
-    reviews: 289,
-    price: 13.99,
-    image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80',
-    category: 'Thai',
-    isFavorite: false,
-    deliveryTime: '25-35 min',
-  },
-];
-
-export const offers: OfferItem[] = [
-  {
-    id: '1',
-    title: 'Weekend Special',
-    description: 'Get extra savings on your weekend orders',
-    discount: 25,
-    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80',
-    bgColor: '#FF6B35',
-    validUntil: 'Today Only',
-  },
-  {
-    id: '2',
-    title: 'Pizza Combo',
-    description: 'Buy any large pizza, get a free drink',
-    discount: 40,
-    image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80',
-    bgColor: '#E85520',
-    validUntil: 'Ends Sunday',
-  },
-  {
-    id: '3',
-    title: 'Healthy Monday',
-    description: 'All salads and healthy bowls discounted',
-    discount: 20,
-    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=600&q=80',
-    bgColor: '#4CAF50',
-    validUntil: 'Mon & Tue',
-  },
+  { id: '1', name: 'Classic Smash Burger',  restaurantId: 'r1', restaurant: 'Burger Republic', rating: 4.8, reviews: 320, price: 12.99, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=400&q=80', category: 'Burgers', isFavorite: true,  deliveryTime: '20-30 min' },
+  { id: '2', name: 'Margherita Pizza',       restaurantId: 'r2', restaurant: 'Pizza Palace',    rating: 4.7, reviews: 215, price: 14.99, image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=400&q=80', category: 'Pizza',   isFavorite: false, deliveryTime: '25-35 min' },
+  { id: '3', name: 'Dragon Roll Sushi',      restaurantId: 'r3', restaurant: 'Tokyo Garden',    rating: 4.9, reviews: 410, price: 18.99, image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&q=80', category: 'Sushi',   isFavorite: true,  deliveryTime: '30-40 min' },
+  { id: '4', name: 'Chicken Tacos',          restaurantId: 'r4', restaurant: 'Taco Loco',       rating: 4.6, reviews: 178, price: 9.99,  image: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=400&q=80', category: 'Mexican', isFavorite: false, deliveryTime: '15-25 min' },
+  { id: '5', name: 'Pad Thai Noodles',       restaurantId: 'r5', restaurant: 'Thai Orchid',     rating: 4.7, reviews: 289, price: 13.99, image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80', category: 'Thai',    isFavorite: false, deliveryTime: '25-35 min' },
 ];
 
 export const recommendedFoods: RecommendedItem[] = [
-  {
-    id: '1',
-    name: 'Truffle Mushroom Pasta',
-    restaurant: 'La Bella Italia',
-    rating: 4.9,
-    price: 16.99,
-    image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80',
-    deliveryTime: '20-30 min',
-    category: 'Pasta',
-    calories: 520,
-  },
-  {
-    id: '2',
-    name: 'Spicy Ramen Bowl',
-    restaurant: 'Ramen House',
-    rating: 4.8,
-    price: 15.99,
-    image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&q=80',
-    deliveryTime: '25-35 min',
-    category: 'Japanese',
-    calories: 680,
-  },
-  {
-    id: '3',
-    name: 'BBQ Ribs Platter',
-    restaurant: 'Smokehouse Grill',
-    rating: 4.7,
-    price: 24.99,
-    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=400&q=80',
-    deliveryTime: '35-45 min',
-    category: 'BBQ',
-    calories: 890,
-  },
-  {
-    id: '4',
-    name: 'Avocado Buddha Bowl',
-    restaurant: 'Green Garden',
-    rating: 4.6,
-    price: 13.99,
-    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&q=80',
-    deliveryTime: '15-25 min',
-    category: 'Healthy',
-    calories: 420,
-  },
+  { id: '1', name: 'Truffle Pasta',       restaurantId: 'r2', restaurant: 'Pizza Palace',  rating: 4.9, price: 16.99, image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=400&q=80', deliveryTime: '20-30 min', category: 'Pasta',    calories: 520 },
+  { id: '2', name: 'Spicy Ramen Bowl',    restaurantId: 'r3', restaurant: 'Tokyo Garden',  rating: 4.8, price: 15.99, image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&q=80', deliveryTime: '25-35 min', category: 'Japanese', calories: 680 },
+  { id: '3', name: 'BBQ Bacon Burger',    restaurantId: 'r1', restaurant: 'Burger Republic',rating: 4.7, price: 14.99, image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400&q=80', deliveryTime: '20-30 min', category: 'Burgers',  calories: 890 },
+  { id: '4', name: 'Chicken Burrito',     restaurantId: 'r4', restaurant: 'Taco Loco',     rating: 4.6, price: 11.99, image: 'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=400&q=80', deliveryTime: '15-25 min', category: 'Mexican',  calories: 720 },
+];
+
+export const offers: OfferItem[] = [
+  { id: '1', title: 'Weekend Special',  description: 'Get extra savings on all burgers',      discount: 25, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80', bgColor: '#FF6B35', validUntil: 'Today Only',   restaurantId: 'r1' },
+  { id: '2', title: 'Pizza Combo',      description: 'Buy any large pizza, get a free drink',  discount: 40, image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80', bgColor: '#E85520', validUntil: 'Ends Sunday',  restaurantId: 'r2' },
+  { id: '3', title: 'Sushi Night',      description: 'Premium sushi at special prices',        discount: 20, image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&q=80', bgColor: '#2196F3', validUntil: 'Mon & Tue',    restaurantId: 'r3' },
+  { id: '4', title: 'Taco Tuesday',     description: 'All tacos at discounted price today',    discount: 30, image: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=600&q=80', bgColor: '#4CAF50', validUntil: 'Tuesdays',     restaurantId: 'r4' },
+  { id: '5', title: 'Thai Lunch Deal',  description: 'Curries and noodles at lunch prices',   discount: 15, image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80', bgColor: '#FF9800', validUntil: '12pm–3pm',     restaurantId: 'r5' },
+];
+
+export const banners: BannerItem[] = [
+  { id: '1', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80', title: 'Big Burger Deal',  subtitle: 'Get 30% off on all burgers today!',     bgColor: '#FF6B35', restaurantId: 'r1' },
+  { id: '2', image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80', title: 'Pizza Fiesta',    subtitle: 'Free delivery on orders above $20',     bgColor: '#E85520', restaurantId: 'r2' },
+  { id: '3', image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800&q=80', title: 'Sushi Night',     subtitle: 'Premium sushi at special prices',       bgColor: '#FF8C5A', restaurantId: 'r3' },
+  { id: '4', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80',    title: 'Thai Special',    subtitle: 'All noodle dishes 20% off today!',      bgColor: '#4CAF50', restaurantId: 'r5' },
 ];
