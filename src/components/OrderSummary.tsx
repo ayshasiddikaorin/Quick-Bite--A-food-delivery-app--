@@ -44,8 +44,8 @@ const OrderSummary: React.FC<Props> = ({
 
       <View style={styles.row}>
         <Text style={styles.label}>Delivery</Text>
-        <Text style={styles.value}>
-          ${deliveryFee.toFixed(2)}
+        <Text style={[styles.value, deliveryFee === 0 && styles.pendingValue]}>
+          {deliveryFee === 0 ? 'At checkout' : `$${deliveryFee.toFixed(2)}`}
         </Text>
       </View>
 
@@ -126,6 +126,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: Colors.black,
+  },
+
+  pendingValue: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.gray,
+    fontStyle: 'italic',
   },
 
   discount: {

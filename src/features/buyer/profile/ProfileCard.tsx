@@ -10,8 +10,8 @@ import {
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
-import { UserProfile } from '../data/accountData';
-import Colors from '../constants/colors';
+import { UserProfile } from '../../../data/accountData';
+import Colors from '../../../constants/colors';
 
 interface Props {
   user: UserProfile;

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CartItem } from '../types/cart';
+import { CartItem } from '../types/index';
 
 const CART_KEY = 'FOODIGO_CART';
 

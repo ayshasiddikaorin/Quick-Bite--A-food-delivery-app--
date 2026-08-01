@@ -13,27 +13,23 @@ import Colors from '../constants/colors';
 
 interface Props {
   item: FoodItem;
+  onPress?: () => void;
 }
 
-const FoodCard: React.FC<Props> = ({ item }) => {
+const FoodCard: React.FC<Props> = ({ item, onPress }) => {
   const [isFav, setIsFav] = useState(item.isFavorite);
-  const [cartCount, setCartCount] = useState(0);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handleFavPress = () => {
     Animated.sequence([
       Animated.timing(scaleAnim, { toValue: 1.3, duration: 120, useNativeDriver: true }),
-      Animated.timing(scaleAnim, { toValue: 1, duration: 120, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 1,   duration: 120, useNativeDriver: true }),
     ]).start();
     setIsFav(!isFav);
   };
 
-  const handleAddToCart = () => {
-    setCartCount((prev) => prev + 1);
-  };
-
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.92}>
       {/* Image */}
       <View style={styles.imageContainer}>
         <Image source={{ uri: item.image }} style={styles.image} />
@@ -41,7 +37,7 @@ const FoodCard: React.FC<Props> = ({ item }) => {
         {/* Favorite Button */}
         <TouchableOpacity
           style={styles.favBtn}
-          onPress={handleFavPress}
+          onPress={(e) => { e.stopPropagation?.(); handleFavPress(); }}
           activeOpacity={0.8}
         >
           <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -67,35 +63,25 @@ const FoodCard: React.FC<Props> = ({ item }) => {
           <MaterialIcons name="storefront" size={11} color={Colors.gray} /> {item.restaurant}
         </Text>
 
-        {/* Rating */}
         <View style={styles.ratingRow}>
           <Ionicons name="star" size={12} color={Colors.rating} />
           <Text style={styles.ratingText}>{item.rating}</Text>
           <Text style={styles.reviews}>({item.reviews})</Text>
         </View>
 
-        {/* Price & Cart */}
         <View style={styles.footer}>
           <Text style={styles.price}>${item.price.toFixed(2)}</Text>
-          <TouchableOpacity
-            style={styles.addBtn}
-            onPress={handleAddToCart}
-            activeOpacity={0.8}
-          >
-            {cartCount > 0 ? (
-              <View style={styles.cartCountRow}>
-                <Ionicons name="cart" size={14} color={Colors.white} />
-                <Text style={styles.cartCountText}>{cartCount}</Text>
-              </View>
-            ) : (
-              <Ionicons name="add" size={18} color={Colors.white} />
-            )}
-          </TouchableOpacity>
+          {/* Tap the whole card to open restaurant — no separate add btn needed */}
+          <View style={styles.addBtn}>
+            <Ionicons name="chevron-forward" size={16} color={Colors.white} />
+          </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
+
+export default FoodCard;
 
 const styles = StyleSheet.create({
   card: {
@@ -110,112 +96,37 @@ const styles = StyleSheet.create({
     elevation: 4,
     overflow: 'hidden',
   },
-  imageContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 130,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
+  imageContainer: { position: 'relative', width: '100%', height: 130 },
+  image: { width: '100%', height: '100%', resizeMode: 'cover' },
   favBtn: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+    position: 'absolute', top: 10, right: 10,
+    width: 32, height: 32, borderRadius: 10,
     backgroundColor: Colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1, shadowRadius: 4, elevation: 3,
   },
   timeBadge: {
-    position: 'absolute',
-    bottom: 10,
-    left: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
+    position: 'absolute', bottom: 10, left: 10,
+    flexDirection: 'row', alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 20,
-    gap: 3,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20, gap: 3,
   },
-  timeText: {
-    color: Colors.white,
-    fontSize: 9,
-    fontWeight: '600',
-  },
-  info: {
-    padding: 12,
-  },
-  name: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.black,
-    marginBottom: 3,
-  },
-  restaurant: {
-    fontSize: 11,
-    color: Colors.gray,
-    fontWeight: '500',
-    marginBottom: 6,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    marginBottom: 10,
-  },
-  ratingText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.black,
-  },
-  reviews: {
-    fontSize: 11,
-    color: Colors.gray,
-  },
-  footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: Colors.primary,
-  },
+  timeText: { color: Colors.white, fontSize: 9, fontWeight: '600' },
+  info: { padding: 12 },
+  name: { fontSize: 14, fontWeight: '700', color: Colors.black, marginBottom: 3 },
+  restaurant: { fontSize: 11, color: Colors.gray, fontWeight: '500', marginBottom: 6 },
+  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 10 },
+  ratingText: { fontSize: 12, fontWeight: '700', color: Colors.black },
+  reviews: { fontSize: 11, color: Colors.gray },
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  price: { fontSize: 16, fontWeight: '800', color: Colors.primary },
   addBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 11,
+    width: 34, height: 34, borderRadius: 11,
     backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  cartCountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  cartCountText: {
-    color: Colors.white,
-    fontSize: 11,
-    fontWeight: '700',
+    shadowOpacity: 0.35, shadowRadius: 6, elevation: 4,
   },
 });
-
-export default FoodCard;

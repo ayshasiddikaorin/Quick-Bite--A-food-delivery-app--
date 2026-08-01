@@ -12,31 +12,27 @@ import Colors from '../constants/colors';
 
 interface Props {
   item: RecommendedItem;
+  onPress?: () => void;
 }
 
-const RecommendedCard: React.FC<Props> = ({ item }) => {
+const RecommendedCard: React.FC<Props> = ({ item, onPress }) => {
   const [isFav, setIsFav] = useState(false);
 
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.92}>
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.92}>
       {/* Food Image */}
       <Image source={{ uri: item.image }} style={styles.image} />
 
       {/* Content */}
       <View style={styles.content}>
-        {/* Category Tag */}
         <View style={styles.categoryTag}>
           <Text style={styles.categoryText}>{item.category}</Text>
         </View>
-
         <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-
         <View style={styles.restaurantRow}>
           <MaterialIcons name="storefront" size={13} color={Colors.gray} />
           <Text style={styles.restaurantText}>{item.restaurant}</Text>
         </View>
-
-        {/* Stats Row */}
         <View style={styles.statsRow}>
           <View style={styles.stat}>
             <Ionicons name="star" size={13} color={Colors.rating} />
@@ -71,14 +67,17 @@ const RecommendedCard: React.FC<Props> = ({ item }) => {
 
         <View style={styles.priceContainer}>
           <Text style={styles.price}>${item.price.toFixed(2)}</Text>
-          <TouchableOpacity style={styles.addBtn} activeOpacity={0.8}>
-            <Ionicons name="add" size={18} color={Colors.white} />
-          </TouchableOpacity>
+          {/* Arrow indicates tapping opens restaurant */}
+          <View style={styles.addBtn}>
+            <Ionicons name="chevron-forward" size={16} color={Colors.white} />
+          </View>
         </View>
       </View>
     </TouchableOpacity>
   );
 };
+
+export default RecommendedCard;
 
 const styles = StyleSheet.create({
   card: {
@@ -95,103 +94,39 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     alignItems: 'center',
   },
-  image: {
-    width: 100,
-    height: 100,
-    resizeMode: 'cover',
-  },
-  content: {
-    flex: 1,
-    padding: 12,
-  },
+  image: { width: 100, height: 100, resizeMode: 'cover' },
+  content: { flex: 1, padding: 12 },
   categoryTag: {
     alignSelf: 'flex-start',
     backgroundColor: Colors.secondary,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    marginBottom: 5,
+    paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 8, marginBottom: 5,
   },
-  categoryText: {
-    color: Colors.primary,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  name: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.black,
-    marginBottom: 3,
-  },
-  restaurantRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    marginBottom: 7,
-  },
-  restaurantText: {
-    fontSize: 11,
-    color: Colors.gray,
-    fontWeight: '500',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  statText: {
-    fontSize: 11,
-    color: Colors.darkGray,
-    fontWeight: '600',
-  },
-  dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: Colors.lightGray,
-  },
+  categoryText: { color: Colors.primary, fontSize: 10, fontWeight: '700' },
+  name: { fontSize: 14, fontWeight: '700', color: Colors.black, marginBottom: 3 },
+  restaurantRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: 7 },
+  restaurantText: { fontSize: 11, color: Colors.gray, fontWeight: '500' },
+  statsRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  stat: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  statText: { fontSize: 11, color: Colors.darkGray, fontWeight: '600' },
+  dot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: Colors.lightGray },
   rightSide: {
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingRight: 14,
-    height: 100,
+    alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 12, paddingRight: 14, height: 100,
   },
   favBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
+    width: 30, height: 30, borderRadius: 9,
     backgroundColor: Colors.lightGray,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
-  priceContainer: {
-    alignItems: 'center',
-    gap: 6,
-  },
-  price: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: Colors.primary,
-  },
+  priceContainer: { alignItems: 'center', gap: 6 },
+  price: { fontSize: 15, fontWeight: '800', color: Colors.primary },
   addBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
+    width: 30, height: 30, borderRadius: 9,
     backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.35, shadowRadius: 4, elevation: 3,
   },
 });
-
-export default RecommendedCard;
