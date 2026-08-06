@@ -8,7 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { OfferItem } from '../data/dummyData';
+import { OfferItem } from '../models';
 import Colors from '../constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');

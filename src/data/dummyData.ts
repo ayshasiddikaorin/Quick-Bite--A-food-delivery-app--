@@ -1,79 +1,11 @@
-// ─── Interfaces ───────────────────────────────────────────────────────────────
-
-export interface FoodItem {
-  id: string;
-  name: string;
-  restaurantId: string;
-  restaurant: string;
-  rating: number;
-  reviews: number;
-  price: number;
-  image: string;
-  category: string;
-  isFavorite: boolean;
-  deliveryTime: string;
-}
-
-export interface OfferItem {
-  id: string;
-  title: string;
-  description: string;
-  discount: number;
-  image: string;
-  bgColor: string;
-  validUntil: string;
-  restaurantId: string;
-}
-
-export interface BannerItem {
-  id: string;
-  image: string;
-  title: string;
-  subtitle: string;
-  bgColor: string;
-  restaurantId: string;
-}
-
-export interface RecommendedItem {
-  id: string;
-  name: string;
-  restaurantId: string;
-  restaurant: string;
-  rating: number;
-  price: number;
-  image: string;
-  deliveryTime: string;
-  category: string;
-  calories: number;
-}
-
-export interface RestaurantMenuItem {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  category: string;
-  isPopular?: boolean;
-  discount?: number; // % off, only when offer applies
-}
-
-export interface RestaurantData {
-  id: string;
-  name: string;
-  coverImage: string;
-  logo: string;
-  cuisine: string[];
-  rating: number;
-  reviews: number;
-  deliveryTime: string;
-  deliveryFee: number;
-  minOrder: number;
-  address: string;
-  isOpen: boolean;
-  menuCategories: string[];
-  menu: RestaurantMenuItem[];
-}
+import {
+  FoodItem,
+  RecommendedItem,
+  OfferItem,
+  BannerItem,
+  RestaurantData,
+  RestaurantMenuItem,
+} from '../models';
 
 // ─── Restaurants ──────────────────────────────────────────────────────────────
 

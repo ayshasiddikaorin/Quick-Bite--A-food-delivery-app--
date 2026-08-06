@@ -17,7 +17,7 @@ import Colors from '../../../constants/colors';
 import { useAuth } from '../../../context/AuthContext';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
 import type { AdminStackParamList } from '../../../navigation/AdminNavigator';
-import type { UserRole } from '../../../types';
+import type { UserRole } from '../../../models';
 
 type NavProp = NativeStackNavigationProp<AdminStackParamList>;
 

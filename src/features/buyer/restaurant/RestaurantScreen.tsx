@@ -18,10 +18,10 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Colors from '../../../constants/colors';
-import { restaurants, RestaurantMenuItem } from '../../../data/dummyData';
+import { restaurants } from '../../../data/dummyData';
+import { RestaurantMenuItem, CartItem } from '../../../models';
 import { loadCart, saveCart } from '../../../storage/cartStorage';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
-import type { CartItem } from '../../../types';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 type RouteProps = RouteProp<BuyerStackParamList, 'RestaurantPage'>;

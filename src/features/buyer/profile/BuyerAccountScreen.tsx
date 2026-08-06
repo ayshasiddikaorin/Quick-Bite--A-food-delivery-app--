@@ -84,7 +84,7 @@ const BuyerAccountScreen: React.FC = () => {
         </View>
 
         <View style={styles.versionBox}>
-          <Text style={styles.versionText}>Foody v1.0.0</Text>
+          <Text style={styles.versionText}>Quick Bite v1.0.0</Text>
           <Text style={styles.versionSub}>Made with ❤️ for food lovers</Text>
         </View>
       </ScrollView>

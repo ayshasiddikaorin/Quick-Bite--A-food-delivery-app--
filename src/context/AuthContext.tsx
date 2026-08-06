@@ -3,54 +3,26 @@ import React, {
   useContext,
   useState,
   useCallback,
+  useEffect,
   ReactNode,
 } from 'react';
-import { AuthUser, UserRole } from '../types';
+import { AuthUser, UserRole } from '../models';
+import type { RegisterRequest } from '../models/auth';
+import { loginRequest, registerRequest } from '../services/authService';
+import { getStoredAuth, saveAuth, clearAuth } from '../storage/authStorage';
 
 // ─── Context shape ────────────────────────────────────────────────────────────
 interface AuthContextValue {
   user: AuthUser | null;
+  token: string | null;
   isAuthenticated: boolean;
-  login: (role: UserRole, credentials?: Partial<AuthUser>) => void;
-  logout: () => void;
+  isLoading: boolean;
+  login: (email: string, password: string, role?: UserRole) => Promise<void>;
+  register: (payload: RegisterRequest) => Promise<void>;
+  logout: () => Promise<void>;
   getUserRole: () => UserRole | null;
   switchRole: (role: UserRole) => void;
 }
-
-// ─── Mock users per role (simulates backend auth) ─────────────────────────────
-const MOCK_USERS: Record<UserRole, AuthUser> = {
-  buyer: {
-    id: 'u_001',
-    name: 'Aysha Siddika',
-    email: 'aysha@example.com',
-    phone: '01312939830',
-    role: 'buyer',
-    isPremium: true,
-  },
-  seller: {
-    id: 's_001',
-    name: 'Ahmed Rahman',
-    email: 'ahmed@restaurant.com',
-    phone: '01712345678',
-    role: 'seller',
-    restaurantName: 'Spice Garden',
-  },
-  rider: {
-    id: 'r_001',
-    name: 'Karim Hossain',
-    email: 'karim@rider.com',
-    phone: '01812345678',
-    role: 'rider',
-    vehicleType: 'Motorcycle',
-  },
-  admin: {
-    id: 'a_001',
-    name: 'Platform Admin',
-    email: 'admin@foody.com',
-    phone: '01912345678',
-    role: 'admin',
-  },
-};
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -58,49 +30,76 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Restore persisted session (token + user) on app start
+  useEffect(() => {
+    const bootstrap = async () => {
+      const stored = await getStoredAuth();
+      if (stored) {
+        setUser(stored.user);
+        setToken(stored.token);
+      }
+      setIsLoading(false);
+    };
+    bootstrap();
+  }, []);
 
   /**
-   * Login with a given role.
-   * In a real app this would call an API; here we return the mock user.
+   * Login against the backend. The API responds with a JWT (`usertoken`),
+   * the user's `name`, and their `role`. We store all three locally so the
+   * user's features are gated by the role returned by the server.
    */
   const login = useCallback(
-    (role: UserRole, credentials?: Partial<AuthUser>) => {
-      const base = MOCK_USERS[role];
-      setUser({ ...base, ...credentials });
+    async (email: string, password: string, role?: UserRole) => {
+      const response = await loginRequest({ email, password, role });
+      const authUser: AuthUser = { name: response.name, role: response.role };
+      setUser(authUser);
+      setToken(response.usertoken);
+      await saveAuth({ token: response.usertoken, user: authUser });
     },
     []
   );
 
-  /** Hard logout — clears user state */
-  const logout = useCallback(() => {
+  /** Logout — clears the session from state and storage */
+  const logout = useCallback(async () => {
     setUser(null);
+    setToken(null);
+    await clearAuth();
   }, []);
 
   /**
-   * Returns the current user's role, or null if not authenticated.
-   * This is the canonical "getUserRole" utility the requirement mentions.
+   * Register a new account. The backend responds with a JWT (`usertoken`),
+   * `name` and `role` just like login, so we store the session the same way.
    */
+  const register = useCallback(async (payload: RegisterRequest) => {
+    const response = await registerRequest(payload);
+    const authUser: AuthUser = { name: response.name, role: response.role };
+    setUser(authUser);
+    setToken(response.usertoken);
+    await saveAuth({ token: response.usertoken, user: authUser });
+  }, []);
+
+  /** Returns the current user's role, or null if not authenticated */
   const getUserRole = useCallback((): UserRole | null => {
     return user?.role ?? null;
   }, [user]);
 
-  /**
-   * Admin-only: switch to view another role's layout without logging out.
-   */
-  const switchRole = useCallback(
-    (role: UserRole) => {
-      if (!user) return;
-      setUser({ ...MOCK_USERS[role], id: user.id });
-    },
-    [user]
-  );
+  /** Admin-only: switch to view another role's layout without logging out */
+  const switchRole = useCallback((role: UserRole) => {
+    setUser((prev) => (prev ? { ...prev, role } : prev));
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        token,
         isAuthenticated: user !== null,
+        isLoading,
         login,
+        register,
         logout,
         getUserRole,
         switchRole,

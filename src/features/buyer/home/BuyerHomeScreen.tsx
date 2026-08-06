@@ -46,7 +46,7 @@ const BuyerHomeScreen: React.FC = () => {
             </View>
             <View>
               <Text style={styles.logoText}>
-                Foody<Text style={styles.logoAccent}> Fast & Fresh</Text>
+                Quick Bite
               </Text>
               <Text style={styles.tagline}>Dhaka, Bangladesh</Text>
             </View>

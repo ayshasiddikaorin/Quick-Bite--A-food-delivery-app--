@@ -6,6 +6,7 @@ import {
   StyleSheet,
   StatusBar,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +18,7 @@ import InputField from '../../components/shared/InputField';
 import PrimaryButton from '../../components/shared/PrimaryButton';
 import { useAuth } from '../../context/AuthContext';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { UserRole } from '../../types';
+import { UserRole } from '../../models';
 
 type NavProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>;
 type RouteProps = RouteProp<AuthStackParamList, 'Register'>;
@@ -44,7 +45,7 @@ type FormErrors = Partial<Record<keyof FormState, string>>;
 const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteProps>();
-  const { login } = useAuth();
+  const { register } = useAuth();
 
   const role: UserRole = route.params?.role ?? 'buyer';
   const cfg = ROLE_CONFIG[role];
@@ -84,19 +85,27 @@ const RegisterScreen: React.FC = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!validate()) return;
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      login(role, {
+    try {
+      await register({
         name: form.name.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
-        restaurantName: form.restaurantName || undefined,
-        vehicleType: form.vehicleType || undefined,
+        password: form.password,
+        role,
+        restaurantName: form.restaurantName.trim() || undefined,
+        vehicleType: form.vehicleType.trim() || undefined,
       });
-    }, 800);
+    } catch (error: any) {
+      Alert.alert(
+        'Registration Failed',
+        error?.message ?? 'Something went wrong. Please try again.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -126,7 +135,7 @@ const RegisterScreen: React.FC = () => {
           </Text>
         </View>
 
-        <Text style={styles.title}>Join Foody</Text>
+        <Text style={styles.title}>Join Quick Bite</Text>
         <Text style={styles.subtitle}>Fill in the details below to get started</Text>
 
         <View style={styles.form}>

@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 import Colors from '../../../constants/colors';
-import type { OrderStatus } from '../../../types';
+import type { OrderStatus } from '../../../models';
 
 type FilterType = 'All' | 'Pending' | 'Preparing' | 'On the Way' | 'Delivered' | 'Cancelled';
 

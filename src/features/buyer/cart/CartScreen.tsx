@@ -20,7 +20,7 @@ import PromoCodeCard from '../../../components/PromoCodeCart';
 import OrderSummary from '../../../components/OrderSummary';
 import EmptyCart from './EmptyCart';
 
-import type { CartItem } from '../../../types/index';
+import type { CartItem } from '../../../models';
 import { cartItems as seedData } from '../../../data/cartData';
 import {
   getCart,

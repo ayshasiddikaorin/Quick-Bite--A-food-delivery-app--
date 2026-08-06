@@ -18,7 +18,7 @@ import InputField from '../../components/shared/InputField';
 import PrimaryButton from '../../components/shared/PrimaryButton';
 import { useAuth } from '../../context/AuthContext';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { UserRole } from '../../types';
+import { UserRole } from '../../models';
 
 type NavProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>;
 type RouteProps = RouteProp<AuthStackParamList, 'Login'>;
@@ -57,14 +57,19 @@ const LoginScreen: React.FC = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!validate()) return;
     setLoading(true);
-    // Simulate network call
-    setTimeout(() => {
+    try {
+      await login(email.trim(), password, role);
+    } catch (error: any) {
+      Alert.alert(
+        'Login Failed',
+        error?.message ?? 'Something went wrong. Please try again.'
+      );
+    } finally {
       setLoading(false);
-      login(role, { email: email.trim() });
-    }, 800);
+    }
   };
 
   return (

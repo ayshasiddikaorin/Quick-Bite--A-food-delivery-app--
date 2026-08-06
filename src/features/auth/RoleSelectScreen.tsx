@@ -13,7 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Colors from '../../constants/colors';
-import { UserRole } from '../../types';
+import { UserRole } from '../../models';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 
 type NavProp = NativeStackNavigationProp<AuthStackParamList, 'RoleSelect'>;
@@ -83,7 +83,7 @@ const RoleSelectScreen: React.FC = () => {
           </View>
           <View>
             <Text style={styles.brandName}>
-              Foody<Text style={styles.brandAccent}> Fast & Fresh</Text>
+              Quick Bite
             </Text>
             <Text style={styles.brandTagline}>Multi-vendor food delivery</Text>
           </View>

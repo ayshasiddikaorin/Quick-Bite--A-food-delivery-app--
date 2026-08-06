@@ -1,6 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { UserRole } from '../types';
+import { UserRole } from '../models';
 
 import RoleSelectScreen from '../features/auth/RoleSelectScreen';
 import LoginScreen from '../features/auth/LoginScreen';

@@ -9,7 +9,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import Colors from '../../../constants/colors';
-import { CartItem } from '../../../types/index';
+import { CartItem } from '../../../models';
 
 interface Props {
   item: CartItem;

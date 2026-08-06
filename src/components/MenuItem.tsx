@@ -6,7 +6,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { MenuItemData } from '../data/accountData';
+import { MenuItemData } from '../models';
 import Colors from '../constants/colors';
 
 interface Props {
