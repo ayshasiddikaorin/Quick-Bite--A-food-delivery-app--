@@ -16,10 +16,25 @@ export interface RegisterRequest {
   vehicleType?: string;
 }
 
+/**
+ * Shape returned by both /auth/login and /auth/register.
+ * The backend puts all user fields plus the JWT in the data envelope.
+ */
 export interface LoginResponse {
   usertoken: string;
+  userId: string;
   name: string;
+  email: string;
+  phone: string;
   role: UserRole;
+  avatar: string;
+  isPremium: boolean;
+  loyaltyPoints: number;
+  walletBalance: number;
+  totalOrders: number;
+  memberSince: string;
+  restaurantName?: string;
+  vehicleType?: string;
 }
 
 export interface StoredAuth {

@@ -1,5 +1,3 @@
-import { CartItem } from './cart';
-
 export type OrderStatus =
   | 'pending'
   | 'confirmed'
@@ -9,6 +7,14 @@ export type OrderStatus =
   | 'delivered'
   | 'cancelled';
 
+export interface OrderItem {
+  menuItemId: string;
+  name: string;
+  image: string;
+  price: number;
+  quantity: number;
+}
+
 export interface Order {
   id: string;
   customerId: string;
@@ -17,12 +23,17 @@ export interface Order {
   restaurantName: string;
   riderId?: string;
   riderName?: string;
-  items: CartItem[];
+  items: OrderItem[];
   subtotal: number;
   deliveryFee: number;
+  discount: number;
+  tax: number;
   total: number;
   status: OrderStatus;
   address: string;
+  deliveryType: 'standard' | 'express';
+  paymentMethod: string;
+  promoCode?: string;
   createdAt: string;
   updatedAt: string;
 }
