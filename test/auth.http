@@ -1,0 +1,195 @@
+### ─── Variables ──────────────────────────────────────────────────────────────
+@baseUrl = http://localhost:5000/api/v1
+
+# After running "Register buyer" below, paste the returned usertoken here:
+@buyerToken = PASTE_TOKEN_HERE
+
+# After running "Register admin (manual seed)" and logging in, paste here:
+@adminToken = PASTE_ADMIN_TOKEN_HERE
+
+# After running "Admin: list users", paste a userId here:
+@targetUserId = PASTE_USER_ID_HERE
+
+
+### ═══════════════════════════════════════════════════════════════════════════
+### REGISTER
+### ═══════════════════════════════════════════════════════════════════════════
+
+### Register a buyer
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Aysha Siddika",
+  "email": "aysha@test.com",
+  "phone": "01712345678",
+  "password": "Password123",
+  "role": "buyer"
+}
+
+###
+
+### Register a seller
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Ahmed Rahman",
+  "email": "ahmed@restaurant.com",
+  "phone": "01812345678",
+  "password": "Password123",
+  "role": "seller",
+  "restaurantName": "Ahmed's Kitchen"
+}
+
+###
+
+### Register a rider
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Karim Hossain",
+  "email": "karim@rider.com",
+  "phone": "01912345678",
+  "password": "Password123",
+  "role": "rider",
+  "vehicleType": "Motorcycle"
+}
+
+###
+
+### Register — validation error (missing name)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "invalid@test.com",
+  "password": "123"
+}
+
+
+### ═══════════════════════════════════════════════════════════════════════════
+### LOGIN
+### ═══════════════════════════════════════════════════════════════════════════
+
+### Login buyer
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "aysha@test.com",
+  "password": "Password123"
+}
+
+###
+
+### Login with role hint (must match registered role)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "aysha@test.com",
+  "password": "Password123",
+  "role": "buyer"
+}
+
+###
+
+### Login — wrong password (expect 401)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "aysha@test.com",
+  "password": "wrongpassword"
+}
+
+###
+
+### Login — role mismatch (expect 403)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "aysha@test.com",
+  "password": "Password123",
+  "role": "seller"
+}
+
+
+### ═══════════════════════════════════════════════════════════════════════════
+### PROFILE (authenticated)
+### ═══════════════════════════════════════════════════════════════════════════
+
+### GET my profile
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{buyerToken}}
+
+###
+
+### PATCH my profile — update name and phone
+PATCH {{baseUrl}}/auth/me
+Content-Type: application/json
+Authorization: Bearer {{buyerToken}}
+
+{
+  "name": "Aysha Updated",
+  "phone": "01799999999"
+}
+
+###
+
+### PATCH — attempt role escalation (should be ignored server-side)
+PATCH {{baseUrl}}/auth/me
+Content-Type: application/json
+Authorization: Bearer {{buyerToken}}
+
+{
+  "role": "admin"
+}
+
+###
+
+### GET /me without token (expect 401)
+GET {{baseUrl}}/auth/me
+
+
+### ═══════════════════════════════════════════════════════════════════════════
+### ADMIN ENDPOINTS
+### ═══════════════════════════════════════════════════════════════════════════
+
+### Admin — list all users
+GET {{baseUrl}}/auth/admin/users
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Admin — list buyers only
+GET {{baseUrl}}/auth/admin/users?role=buyer
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Admin — list sellers only
+GET {{baseUrl}}/auth/admin/users?role=seller
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Admin — toggle user active/inactive
+PATCH {{baseUrl}}/auth/admin/users/{{targetUserId}}/toggle
+Authorization: Bearer {{adminToken}}
+
+###
+
+### Admin endpoint with buyer token (expect 403)
+GET {{baseUrl}}/auth/admin/users
+Authorization: Bearer {{buyerToken}}
+
+
+### ═══════════════════════════════════════════════════════════════════════════
+### HEALTH CHECK
+### ═══════════════════════════════════════════════════════════════════════════
+
+GET http://localhost:5000/health
