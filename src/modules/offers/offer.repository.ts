@@ -1,6 +1,7 @@
 import { IOffer, Offer } from './offer.model';
+import { IOfferRepository } from './interfaces';
 
-export class OfferRepository {
+export class OfferRepository implements IOfferRepository {
   async create(data: Partial<IOffer>): Promise<IOffer> {
     return Offer.create(data);
   }

@@ -1,6 +1,7 @@
 import { IRestaurant, Restaurant } from './restaurant.model';
+import { IRestaurantRepository } from './interfaces';
 
-export class RestaurantRepository {
+export class RestaurantRepository implements IRestaurantRepository {
   async create(data: Partial<IRestaurant>): Promise<IRestaurant> {
     return Restaurant.create(data);
   }

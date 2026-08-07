@@ -1,66 +1,46 @@
+/**
+ * user.service.ts
+ * ───────────────
+ * Business logic only.
+ * No HTTP concepts (Request/Response), no Mongoose imports.
+ * Depends on IUserRepository interface, not the concrete class.
+ */
 import { AppError } from '../../shared/errors/AppError';
 import { signToken } from '../../shared/utils/jwt';
-import { UserRepository } from './user.repository';
 import { IUser } from './user.model';
-
-export interface RegisterDTO {
-  name: string;
-  email: string;
-  phone: string;
-  password: string;
-  role: IUser['role'];
-  restaurantName?: string;
-  vehicleType?: string;
-}
-
-export interface LoginDTO {
-  email: string;
-  password: string;
-  role?: IUser['role'];
-}
-
-export interface AuthResponse {
-  usertoken: string;
-  userId: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: string;
-  avatar: string;
-  isPremium: boolean;
-  loyaltyPoints: number;
-  walletBalance: number;
-  totalOrders: number;
-  memberSince: Date;
-  restaurantName?: string;
-  vehicleType?: string;
-}
+import { IUserRepository } from './interfaces';
+import {
+  RegisterDTO,
+  LoginDTO,
+  AuthResponseDTO,
+  UpdateProfileDTO,
+} from './dto';
 
 export class UserService {
-  constructor(private readonly repo: UserRepository) {}
+  constructor(private readonly repo: IUserRepository) {}
 
-  async register(dto: RegisterDTO): Promise<AuthResponse> {
+  // ── Auth ───────────────────────────────────────────────────────────────────
+
+  async register(dto: RegisterDTO): Promise<AuthResponseDTO> {
     const exists = await this.repo.findByEmail(dto.email);
     if (exists) throw new AppError('Email already in use', 409);
 
     const user = await this.repo.create({
-      name: dto.name,
-      email: dto.email,
-      phone: dto.phone,
-      password: dto.password,
-      role: dto.role,
+      name:           dto.name,
+      email:          dto.email,
+      phone:          dto.phone,
+      password:       dto.password,
+      role:           dto.role,
       restaurantName: dto.restaurantName,
-      vehicleType: dto.vehicleType,
+      vehicleType:    dto.vehicleType,
     });
 
-    const usertoken = signToken({ id: String(user._id), role: user.role });
-    return this.buildAuthResponse(usertoken, user);
+    return this.toAuthResponse(signToken({ id: String(user._id), role: user.role }), user);
   }
 
-  async login(dto: LoginDTO): Promise<AuthResponse> {
+  async login(dto: LoginDTO): Promise<AuthResponseDTO> {
     const user = await this.repo.findByEmail(dto.email);
-
-    if (!user) throw new AppError('Invalid email or password', 401);
+    if (!user)        throw new AppError('Invalid email or password', 401);
     if (!user.isActive) throw new AppError('Your account has been deactivated', 403);
 
     const match = await user.comparePassword(dto.password);
@@ -70,9 +50,10 @@ export class UserService {
       throw new AppError(`This account is registered as a ${user.role}`, 403);
     }
 
-    const usertoken = signToken({ id: String(user._id), role: user.role });
-    return this.buildAuthResponse(usertoken, user);
+    return this.toAuthResponse(signToken({ id: String(user._id), role: user.role }), user);
   }
+
+  // ── Profile ────────────────────────────────────────────────────────────────
 
   async getProfile(id: string): Promise<IUser> {
     const user = await this.repo.findById(id);
@@ -80,15 +61,13 @@ export class UserService {
     return user;
   }
 
-  async updateProfile(id: string, data: Partial<IUser>): Promise<IUser> {
-    // Prevent role escalation through profile update
-    delete (data as any).role;
-    delete (data as any).password;
-
-    const user = await this.repo.update(id, data);
+  async updateProfile(id: string, dto: UpdateProfileDTO): Promise<IUser> {
+    const user = await this.repo.update(id, dto);
     if (!user) throw new AppError('User not found', 404);
     return user;
   }
+
+  // ── Admin ──────────────────────────────────────────────────────────────────
 
   async listAll(roleFilter?: string): Promise<IUser[]> {
     if (roleFilter && roleFilter !== 'all') {
@@ -103,23 +82,24 @@ export class UserService {
     return user;
   }
 
-  // ── Private helpers ──────────────────────────────────────────────────────
-  private buildAuthResponse(usertoken: string, user: IUser): AuthResponse {
+  // ── Private helpers ────────────────────────────────────────────────────────
+
+  private toAuthResponse(usertoken: string, user: IUser): AuthResponseDTO {
     return {
       usertoken,
-      userId:        String(user._id),
-      name:          user.name,
-      email:         user.email,
-      phone:         user.phone,
-      role:          user.role,
-      avatar:        user.avatar,
-      isPremium:     user.isPremium,
-      loyaltyPoints: user.loyaltyPoints,
-      walletBalance: user.walletBalance,
-      totalOrders:   user.totalOrders,
-      memberSince:   user.memberSince,
+      userId:         String(user._id),
+      name:           user.name,
+      email:          user.email,
+      phone:          user.phone,
+      role:           user.role,
+      avatar:         user.avatar,
+      isPremium:      user.isPremium,
+      loyaltyPoints:  user.loyaltyPoints,
+      walletBalance:  user.walletBalance,
+      totalOrders:    user.totalOrders,
+      memberSince:    user.memberSince,
       restaurantName: user.restaurantName,
-      vehicleType:   user.vehicleType,
+      vehicleType:    user.vehicleType,
     };
   }
 }

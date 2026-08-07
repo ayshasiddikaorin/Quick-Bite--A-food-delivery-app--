@@ -1,6 +1,7 @@
 import { IMenuItem, MenuItem } from './menuItem.model';
+import { IMenuItemRepository } from './interfaces';
 
-export class MenuItemRepository {
+export class MenuItemRepository implements IMenuItemRepository {
   async create(data: Partial<IMenuItem>): Promise<IMenuItem> {
     return MenuItem.create(data);
   }

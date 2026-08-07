@@ -18,6 +18,7 @@ router.patch('/:id/cancel', authenticate, controller.cancelOrder);
 
 // ── Seller ────────────────────────────────────────────────────────────────────
 router.get('/seller', authenticate, authorize('seller'), controller.getRestaurantOrders);
+router.get('/seller/stats', authenticate, authorize('seller'), controller.getSellerStats);
 router.patch('/seller/:id/advance', authenticate, authorize('seller'), controller.advanceOrderSeller);
 
 // ── Rider ─────────────────────────────────────────────────────────────────────

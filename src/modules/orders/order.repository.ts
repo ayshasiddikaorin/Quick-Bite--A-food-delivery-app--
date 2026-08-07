@@ -1,6 +1,7 @@
 import { IOrder, Order, OrderStatus } from './order.model';
+import { IOrderRepository } from './interfaces';
 
-export class OrderRepository {
+export class OrderRepository implements IOrderRepository {
   async create(data: Partial<IOrder>): Promise<IOrder> {
     return Order.create(data);
   }

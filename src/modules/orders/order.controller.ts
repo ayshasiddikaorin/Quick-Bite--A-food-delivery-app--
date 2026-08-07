@@ -60,4 +60,9 @@ export class OrderController {
     const orders = await this.service.getAllOrders(status);
     sendOk(res, orders);
   };
+
+  getSellerStats = async (req: Request, res: Response): Promise<void> => {
+    const stats = await this.service.getSellerStats(req.user!.id);
+    sendOk(res, stats);
+  };
 }

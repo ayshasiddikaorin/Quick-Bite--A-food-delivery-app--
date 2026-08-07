@@ -21,7 +21,9 @@ export class UserController {
   };
 
   updateProfile = async (req: Request, res: Response): Promise<void> => {
-    const user = await this.service.updateProfile(req.user!.id, req.body);
+    // Explicitly extract only allowed fields — prevents role/password injection
+    const { name, phone, avatar } = req.body as { name?: string; phone?: string; avatar?: string };
+    const user = await this.service.updateProfile(req.user!.id, { name, phone, avatar });
     sendOk(res, user, 'Profile updated');
   };
 

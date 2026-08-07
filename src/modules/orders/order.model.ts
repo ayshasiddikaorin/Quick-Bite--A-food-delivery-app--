@@ -1,13 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { OrderStatus, DeliveryType } from '../../shared/types';
 
-export type OrderStatus =
-  | 'pending'
-  | 'confirmed'
-  | 'preparing'
-  | 'ready'
-  | 'on_the_way'
-  | 'delivered'
-  | 'cancelled';
+export type { OrderStatus }; // re-export so existing imports still work
 
 export interface IOrderItem {
   menuItemId: mongoose.Types.ObjectId;
@@ -32,7 +26,7 @@ export interface IOrder extends Document {
   total: number;
   status: OrderStatus;
   address: string;
-  deliveryType: 'standard' | 'express';
+  deliveryType: DeliveryType;
   paymentMethod: string;
   promoCode?: string;
 }
@@ -68,7 +62,7 @@ const orderSchema = new Schema<IOrder>(
       default: 'pending',
     },
     address: { type: String, required: true },
-    deliveryType: { type: String, enum: ['standard', 'express'], default: 'standard' },
+    deliveryType: { type: String, enum: ['standard', 'express'] as DeliveryType[], default: 'standard' as DeliveryType },
     paymentMethod: { type: String, default: 'Cash on Delivery' },
     promoCode: { type: String },
   },

@@ -1,13 +1,22 @@
+/**
+ * menuItem.service.ts
+ * ───────────────────
+ * Business logic for menu items.
+ * Depends on IMenuItemRepository and IRestaurantRepository — not concrete classes.
+ */
 import { AppError } from '../../shared/errors/AppError';
-import { MenuItemRepository } from './menuItem.repository';
 import { IMenuItem } from './menuItem.model';
-import { RestaurantRepository } from '../restaurants/restaurant.repository';
+import { IMenuItemRepository } from './interfaces';
+import { IRestaurantRepository } from '../restaurants/interfaces';
+import { CreateMenuItemDTO, UpdateMenuItemDTO } from './dto';
 
 export class MenuItemService {
   constructor(
-    private readonly repo: MenuItemRepository,
-    private readonly restaurantRepo: RestaurantRepository,
+    private readonly repo:           IMenuItemRepository,
+    private readonly restaurantRepo: IRestaurantRepository,
   ) {}
+
+  // ── Public ─────────────────────────────────────────────────────────────────
 
   async getByRestaurant(restaurantId: string): Promise<IMenuItem[]> {
     return this.repo.findByRestaurant(restaurantId);
@@ -19,19 +28,19 @@ export class MenuItemService {
     return item;
   }
 
-  /** Seller: add a new menu item to their restaurant */
-  async create(ownerId: string, data: Partial<IMenuItem>): Promise<IMenuItem> {
+  // ── Seller ─────────────────────────────────────────────────────────────────
+
+  async create(ownerId: string, dto: CreateMenuItemDTO): Promise<IMenuItem> {
     const restaurant = await this.restaurantRepo.findByOwnerId(ownerId);
     if (!restaurant) throw new AppError('No restaurant found for this seller', 404);
     if (!restaurant.isApproved) throw new AppError('Restaurant is not approved yet', 403);
 
-    return this.repo.create({ ...data, restaurantId: restaurant._id as any });
+    return this.repo.create({ ...dto, restaurantId: restaurant._id as any });
   }
 
-  /** Seller: update one of their menu items */
-  async update(ownerId: string, itemId: string, data: Partial<IMenuItem>): Promise<IMenuItem> {
+  async update(ownerId: string, itemId: string, dto: UpdateMenuItemDTO): Promise<IMenuItem> {
     await this.assertOwnership(ownerId, itemId);
-    const updated = await this.repo.update(itemId, data);
+    const updated = await this.repo.update(itemId, dto as any);
     if (!updated) throw new AppError('Menu item not found', 404);
     return updated;
   }

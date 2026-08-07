@@ -1,7 +1,8 @@
 import mongoose, { Document, Schema } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { UserRole } from '../../shared/types';
 
-export type UserRole = 'buyer' | 'seller' | 'rider' | 'admin';
+export type { UserRole };  // re-export for backward compat
 
 export interface IUser extends Document {
   name: string;

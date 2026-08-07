@@ -1,6 +1,7 @@
 import { IUser, User, UserRole } from './user.model';
+import { IUserRepository } from './interfaces';
 
-export class UserRepository {
+export class UserRepository implements IUserRepository {
   async create(data: Partial<IUser>): Promise<IUser> {
     return User.create(data);
   }

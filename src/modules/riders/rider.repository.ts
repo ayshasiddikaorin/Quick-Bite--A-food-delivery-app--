@@ -1,6 +1,7 @@
 import { IRider, Rider } from './rider.model';
+import { IRiderRepository } from './interfaces';
 
-export class RiderRepository {
+export class RiderRepository implements IRiderRepository {
   async create(data: Partial<IRider>): Promise<IRider> {
     return Rider.create(data);
   }

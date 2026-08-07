@@ -1,17 +1,24 @@
-import { UserRepository } from '../users/user.repository';
-import { RestaurantRepository } from '../restaurants/restaurant.repository';
-import { OrderRepository } from '../orders/order.repository';
-import { RiderRepository } from '../riders/rider.repository';
+/**
+ * admin.service.ts
+ * ────────────────
+ * Platform-wide aggregation logic.
+ * Depends on repository interfaces — not concrete classes.
+ */
+import { IUserRepository } from '../users/interfaces';
+import { IRestaurantRepository } from '../restaurants/interfaces';
+import { IOrderRepository } from '../orders/interfaces';
+import { IRiderRepository } from '../riders/interfaces';
+import { PlatformStatsDTO } from './dto';
 
 export class AdminService {
   constructor(
-    private readonly userRepo: UserRepository,
-    private readonly restaurantRepo: RestaurantRepository,
-    private readonly orderRepo: OrderRepository,
-    private readonly riderRepo: RiderRepository,
+    private readonly userRepo:       IUserRepository,
+    private readonly restaurantRepo: IRestaurantRepository,
+    private readonly orderRepo:      IOrderRepository,
+    private readonly riderRepo:      IRiderRepository,
   ) {}
 
-  async getPlatformStats(): Promise<object> {
+  async getPlatformStats(): Promise<PlatformStatsDTO> {
     const [
       userCounts,
       totalRestaurants,
@@ -35,10 +42,10 @@ export class AdminService {
     ]);
 
     return {
-      totalUsers: (userCounts['buyer'] ?? 0) + (userCounts['seller'] ?? 0) + (userCounts['rider'] ?? 0),
-      totalBuyers: userCounts['buyer'] ?? 0,
-      totalSellers: userCounts['seller'] ?? 0,
-      totalRiders: userCounts['rider'] ?? 0,
+      totalUsers:       (userCounts['buyer'] ?? 0) + (userCounts['seller'] ?? 0) + (userCounts['rider'] ?? 0),
+      totalBuyers:      userCounts['buyer']  ?? 0,
+      totalSellers:     userCounts['seller'] ?? 0,
+      totalRiders:      userCounts['rider']  ?? 0,
       totalRestaurants,
       totalOrders,
       completedOrders,
@@ -48,16 +55,5 @@ export class AdminService {
       totalRevenue,
       weeklyOrderData,
     };
-  }
-
-  async getSellerStats(sellerId: string, restaurantId: string): Promise<object> {
-    const [newOrders, preparing, completed, salesResult] = await Promise.all([
-      this.orderRepo.count({ restaurantId, status: 'pending' }),
-      this.orderRepo.count({ restaurantId, status: 'preparing' }),
-      this.orderRepo.count({ restaurantId, status: 'delivered' }),
-      this.orderRepo.totalRevenue(),
-    ]);
-
-    return { newOrders, preparing, completed, totalSales: salesResult };
   }
 }
