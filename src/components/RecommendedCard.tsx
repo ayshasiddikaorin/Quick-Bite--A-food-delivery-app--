@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { RecommendedItem } from '../data/dummyData';
+import { RecommendedItem } from '../models';
 import Colors from '../constants/colors';
 
 interface Props {

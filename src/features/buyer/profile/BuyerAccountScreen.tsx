@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,17 +20,47 @@ import QuickActionCard from '../../../components/QuickActionCard';
 import MenuItem from '../../../components/MenuItem';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
 
-import { userProfile, menuGroups } from '../../../data/accountData';
+import { menuGroups } from '../../../data/accountData';
 import Colors from '../../../constants/colors';
 import { useAuth } from '../../../context/AuthContext';
+import type { UserProfile } from '../../../models';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 
 const BuyerAccountScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
-  const { logout } = useAuth();
+  const { user, logout, refreshProfile } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Build a UserProfile from the live AuthUser — falls back to zeroes while loading
+  const profile: UserProfile = user
+    ? {
+        id:            user.userId,
+        name:          user.name,
+        email:         user.email,
+        phone:         user.phone,
+        avatar:        user.avatar,
+        memberSince:   user.memberSince
+          ? `Member since ${new Date(user.memberSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`
+          : 'New Member',
+        totalOrders:   user.totalOrders,
+        loyaltyPoints: user.loyaltyPoints,
+        walletBalance: user.walletBalance,
+        isPremium:     user.isPremium,
+      }
+    : {
+        id: '', name: '—', email: '—', phone: '—', avatar: '',
+        memberSince: '', totalOrders: 0, loyaltyPoints: 0,
+        walletBalance: 0, isPremium: false,
+      };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try { await refreshProfile(); } catch { /* silent */ }
+    finally { setRefreshing(false); }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -40,19 +71,28 @@ const BuyerAccountScreen: React.FC = () => {
           <View style={styles.accent} />
           <Text style={styles.topBarTitle}>Account</Text>
         </View>
-        <TouchableOpacity style={styles.settingsBtn} activeOpacity={0.75}>
-          <Ionicons name="settings-outline" size={20} color={Colors.black} />
-        </TouchableOpacity>
+        <View style={styles.topBarRight}>
+          {refreshing && (
+            <ActivityIndicator size="small" color={Colors.primary} style={{ marginRight: 8 }} />
+          )}
+          <TouchableOpacity style={styles.settingsBtn} activeOpacity={0.75} onPress={handleRefresh}>
+            <Ionicons name="refresh-outline" size={20} color={Colors.black} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <ProfileCard user={userProfile} />
+        {/* Profile card uses live data from AuthContext */}
+        <ProfileCard user={profile} />
+
         <QuickActionCard />
-        <PromoBanner loyaltyPoints={userProfile.loyaltyPoints} />
-        <WalletCard balance={userProfile.walletBalance} />
+
+        <PromoBanner loyaltyPoints={profile.loyaltyPoints} />
+
+        <WalletCard balance={profile.walletBalance} />
 
         {menuGroups.map((group) => (
           <View key={group.id} style={styles.menuSection}>
@@ -84,7 +124,7 @@ const BuyerAccountScreen: React.FC = () => {
         </View>
 
         <View style={styles.versionBox}>
-          <Text style={styles.versionText}>Foody v1.0.0</Text>
+          <Text style={styles.versionText}>Quick Bite v1.0.0</Text>
           <Text style={styles.versionSub}>Made with ❤️ for food lovers</Text>
         </View>
       </ScrollView>
@@ -119,60 +159,36 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   topBarLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  topBarRight: { flexDirection: 'row', alignItems: 'center' },
   accent: { width: 4, height: 22, borderRadius: 2, backgroundColor: Colors.primary },
   topBarTitle: { fontSize: 22, fontWeight: '800', color: Colors.black },
   settingsBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: Colors.lightGray,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: Colors.lightGray, alignItems: 'center', justifyContent: 'center',
   },
   scrollContent: { paddingBottom: 24 },
   menuSection: { marginTop: 22, paddingHorizontal: 20 },
   groupTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.gray,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 10,
-    marginLeft: 4,
+    fontSize: 13, fontWeight: '700', color: Colors.gray,
+    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10, marginLeft: 4,
   },
   menuCard: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+    borderRadius: 18, overflow: 'hidden',
+    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06, shadowRadius: 12, elevation: 3,
   },
   logoutSection: { paddingHorizontal: 20, marginTop: 22 },
   logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: Colors.white,
-    borderRadius: 18,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: Colors.errorLight,
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: Colors.white, borderRadius: 18,
+    paddingVertical: 14, paddingHorizontal: 16,
+    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06, shadowRadius: 12, elevation: 3,
+    borderWidth: 1, borderColor: Colors.errorLight,
   },
   logoutIconBg: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: Colors.errorLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 38, height: 38, borderRadius: 12,
+    backgroundColor: Colors.errorLight, alignItems: 'center', justifyContent: 'center',
   },
   logoutText: { fontSize: 14, fontWeight: '700', color: Colors.error },
   versionBox: { alignItems: 'center', marginTop: 24, marginBottom: 4, gap: 4 },

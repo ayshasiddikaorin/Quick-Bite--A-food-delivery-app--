@@ -10,7 +10,7 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
-import { BannerItem } from '../data/dummyData';
+import { BannerItem } from '../models';
 import Colors from '../constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');

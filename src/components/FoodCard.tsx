@@ -8,7 +8,7 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { FoodItem } from '../data/dummyData';
+import { FoodItem } from '../models';
 import Colors from '../constants/colors';
 
 interface Props {
