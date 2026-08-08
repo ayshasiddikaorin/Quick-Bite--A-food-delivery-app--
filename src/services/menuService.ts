@@ -1,20 +1,34 @@
+/**
+ * menuService.ts
+ * ──────────────
+ * All menu item API calls.
+ */
 import { apiRequest } from './apiClient';
-import type { RestaurantMenuItem, MenuItem } from '../models';
+import type { RestaurantMenuItem, MenuItem } from '../models/food';
 
-/** Public: get all menu items for a restaurant */
+// ── Public ─────────────────────────────────────────────────────────────────────
+
+/** Get all menu items for a restaurant (used by RestaurantScreen). */
 export function fetchMenuByRestaurant(restaurantId: string): Promise<RestaurantMenuItem[]> {
   return apiRequest<RestaurantMenuItem[]>(`/menu-items/restaurant/${restaurantId}`);
 }
 
-/** Seller: add a new menu item */
-export function createMenuItem(data: Partial<MenuItem>): Promise<MenuItem> {
+/** Get a single menu item by id. */
+export function fetchMenuItemById(id: string): Promise<MenuItem> {
+  return apiRequest<MenuItem>(`/menu-items/${id}`);
+}
+
+// ── Seller ─────────────────────────────────────────────────────────────────────
+
+/** Add a new menu item to the seller's restaurant. */
+export function createMenuItem(data: Omit<MenuItem, 'id' | 'restaurantId'>): Promise<MenuItem> {
   return apiRequest<MenuItem>('/menu-items', {
     method: 'POST',
     body: JSON.stringify(data),
   }, true);
 }
 
-/** Seller: update a menu item */
+/** Update an existing menu item. */
 export function updateMenuItem(id: string, data: Partial<MenuItem>): Promise<MenuItem> {
   return apiRequest<MenuItem>(`/menu-items/${id}`, {
     method: 'PATCH',
@@ -22,12 +36,12 @@ export function updateMenuItem(id: string, data: Partial<MenuItem>): Promise<Men
   }, true);
 }
 
-/** Seller: toggle item availability */
+/** Toggle a menu item's availability (isAvailable). */
 export function toggleMenuItemAvailability(id: string): Promise<MenuItem> {
   return apiRequest<MenuItem>(`/menu-items/${id}/toggle`, { method: 'PATCH' }, true);
 }
 
-/** Seller: delete a menu item */
+/** Delete a menu item permanently. */
 export function deleteMenuItem(id: string): Promise<void> {
   return apiRequest<void>(`/menu-items/${id}`, { method: 'DELETE' }, true);
 }

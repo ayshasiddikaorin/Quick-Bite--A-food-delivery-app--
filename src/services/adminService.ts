@@ -1,18 +1,24 @@
+/**
+ * adminService.ts
+ * ───────────────
+ * Admin-only API calls.
+ */
 import { apiRequest } from './apiClient';
-import type { AdminStats } from '../models';
+import type { AdminStats } from '../models/dashboard';
+import type { AuthUser } from '../models/user';
 
-/** Admin: get platform stats */
+/** Get platform-wide aggregated stats. */
 export function fetchAdminStats(): Promise<AdminStats> {
   return apiRequest<AdminStats>('/admin/stats', {}, true);
 }
 
-/** Admin: list all users (optional role filter) */
-export function adminFetchUsers(role?: string): Promise<object[]> {
+/** List all users, optionally filtered by role ('buyer' | 'seller' | 'rider'). */
+export function adminFetchUsers(role?: string): Promise<AuthUser[]> {
   const qs = role ? `?role=${role}` : '';
-  return apiRequest<object[]>(`/auth/admin/users${qs}`, {}, true);
+  return apiRequest<AuthUser[]>(`/auth/admin/users${qs}`, {}, true);
 }
 
-/** Admin: toggle user active/inactive */
-export function adminToggleUser(id: string): Promise<object> {
-  return apiRequest<object>(`/auth/admin/users/${id}/toggle`, { method: 'PATCH' }, true);
+/** Toggle a user's active/inactive status. Returns updated user. */
+export function adminToggleUser(id: string): Promise<AuthUser> {
+  return apiRequest<AuthUser>(`/auth/admin/users/${id}/toggle`, { method: 'PATCH' }, true);
 }

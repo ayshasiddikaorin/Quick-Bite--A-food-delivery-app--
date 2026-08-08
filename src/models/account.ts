@@ -1,3 +1,8 @@
+/**
+ * Account/profile UI models — used by the buyer account screen.
+ * UserProfile is derived from AuthUser for display purposes.
+ */
+
 export interface UserProfile {
   id: string;
   name: string;
@@ -11,6 +16,7 @@ export interface UserProfile {
   isPremium: boolean;
 }
 
+/** Single item in the account menu list */
 export interface MenuItemData {
   id: string;
   label: string;
@@ -20,6 +26,7 @@ export interface MenuItemData {
   isDestructive?: boolean;
 }
 
+/** Group of account menu items (e.g. "My Activity", "Support") */
 export interface MenuGroup {
   id: string;
   title: string;

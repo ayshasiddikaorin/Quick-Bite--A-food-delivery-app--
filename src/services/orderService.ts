@@ -1,28 +1,16 @@
+/**
+ * orderService.ts
+ * ───────────────
+ * All order-related API calls, separated by role.
+ * Types come from models/order.ts — no inline type declarations here.
+ */
 import { apiRequest } from './apiClient';
-import type { Order } from '../models';
+import type { Order, PlaceOrderPayload } from '../models/order';
+import type { SellerStats } from '../models/dashboard';
 
-export interface PlaceOrderPayload {
-  restaurantId: string;
-  restaurantName: string;
-  items: {
-    menuItemId: string;
-    name: string;
-    image: string;
-    price: number;
-    quantity: number;
-  }[];
-  subtotal: number;
-  deliveryFee: number;
-  discount: number;
-  tax: number;
-  total: number;
-  address: string;
-  deliveryType: 'standard' | 'express';
-  paymentMethod: string;
-  promoCode?: string;
-}
+// ── Buyer ──────────────────────────────────────────────────────────────────────
 
-/** Buyer: place a new order */
+/** Place a new order. Requires buyer role. */
 export function placeOrder(payload: PlaceOrderPayload): Promise<Order> {
   return apiRequest<Order>('/orders', {
     method: 'POST',
@@ -30,52 +18,63 @@ export function placeOrder(payload: PlaceOrderPayload): Promise<Order> {
   }, true);
 }
 
-/** Buyer: get own order history */
+/** Get the logged-in buyer's order history. */
 export function fetchMyOrders(): Promise<Order[]> {
   return apiRequest<Order[]>('/orders/my', {}, true);
 }
 
-/** Buyer/all: get a single order by id */
+/** Get a single order by id (any authenticated role). */
 export function fetchOrderById(id: string): Promise<Order> {
   return apiRequest<Order>(`/orders/${id}`, {}, true);
 }
 
-/** Buyer: cancel an order */
+/** Cancel a pending order. */
 export function cancelOrder(id: string): Promise<Order> {
   return apiRequest<Order>(`/orders/${id}/cancel`, { method: 'PATCH' }, true);
 }
 
-/** Seller: get restaurant orders */
+// ── Seller ─────────────────────────────────────────────────────────────────────
+
+/** Get all orders for the seller's restaurant. */
 export function fetchSellerOrders(): Promise<Order[]> {
   return apiRequest<Order[]>('/orders/seller', {}, true);
 }
 
-/** Seller: advance order to next status */
+/** Get today's overview stats for the seller dashboard. */
+export function fetchSellerStats(): Promise<SellerStats> {
+  return apiRequest<SellerStats>('/orders/seller/stats', {}, true);
+}
+
+/** Advance an order to the next seller status (pending→confirmed→preparing→ready). */
 export function advanceOrderSeller(id: string): Promise<Order> {
   return apiRequest<Order>(`/orders/seller/${id}/advance`, { method: 'PATCH' }, true);
 }
 
-/** Rider: get available (ready) orders */
+// ── Rider ──────────────────────────────────────────────────────────────────────
+
+/** Get all orders with status "ready" — available for pickup. */
 export function fetchRiderAvailableOrders(): Promise<Order[]> {
   return apiRequest<Order[]>('/orders/rider/available', {}, true);
 }
 
-/** Rider: get own active deliveries */
+/** Get this rider's currently active deliveries. */
 export function fetchRiderActiveOrders(): Promise<Order[]> {
   return apiRequest<Order[]>('/orders/rider/active', {}, true);
 }
 
-/** Rider: accept a delivery */
+/** Accept a ready order for delivery (status: ready → on_the_way). */
 export function acceptDelivery(id: string): Promise<Order> {
   return apiRequest<Order>(`/orders/rider/${id}/accept`, { method: 'PATCH' }, true);
 }
 
-/** Rider: advance delivery to next step */
+/** Advance delivery to next rider status (on_the_way → delivered). */
 export function advanceOrderRider(id: string): Promise<Order> {
   return apiRequest<Order>(`/orders/rider/${id}/advance`, { method: 'PATCH' }, true);
 }
 
-/** Admin: get all orders (optional status filter) */
+// ── Admin ──────────────────────────────────────────────────────────────────────
+
+/** Get all orders, optionally filtered by status. */
 export function adminFetchAllOrders(status?: string): Promise<Order[]> {
   const qs = status ? `?status=${status}` : '';
   return apiRequest<Order[]>(`/orders/admin/all${qs}`, {}, true);

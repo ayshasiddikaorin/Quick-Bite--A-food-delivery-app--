@@ -1,5 +1,10 @@
+/**
+ * User domain models — mirrors backend IUser and AuthResponseDTO.
+ */
+
 export type UserRole = 'buyer' | 'seller' | 'rider' | 'admin';
 
+/** In-memory / persisted session user — populated after login or /auth/me */
 export interface AuthUser {
   userId: string;
   name: string;
@@ -11,7 +16,7 @@ export interface AuthUser {
   loyaltyPoints: number;
   walletBalance: number;
   totalOrders: number;
-  memberSince: string;        // ISO string from Date
+  memberSince: string;  // ISO date string
   restaurantName?: string;
   vehicleType?: string;
 }
