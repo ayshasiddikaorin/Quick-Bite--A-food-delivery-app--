@@ -23,6 +23,7 @@ import { getCart, saveCart } from '../../../storage/cartStorage';
 import { fetchRestaurantById } from '../../../services/restaurantService';
 import { fetchMenuByRestaurant } from '../../../services/menuService';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
+import { safeImageUri } from '../../../utils/image';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 type RouteProps = RouteProp<BuyerStackParamList, 'RestaurantPage'>;
@@ -45,7 +46,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, offerDiscount, onAdd,
 
   return (
     <View style={cardStyles.card}>
-      <Image source={{ uri: item.image }} style={cardStyles.image} />
+      <Image source={{ uri: safeImageUri(item.image) }} style={cardStyles.image} />
       {item.isPopular && (
         <View style={cardStyles.popularBadge}>
           <MaterialIcons name="local-fire-department" size={11} color={Colors.white} />
@@ -161,8 +162,8 @@ const RestaurantScreen: React.FC = () => {
         ]);
         if (!cancelled) {
           // Merge API menu into restaurant shape
-          setRestaurant({ ...r, menu: m.length ? m : r.menu });
-          setMenu(m.length ? m : r.menu);
+          setRestaurant({ ...r, menu: m });
+          setMenu(m);
           setFromFallback(false);
         }
       } catch {
@@ -217,8 +218,10 @@ const RestaurantScreen: React.FC = () => {
           const realItem = menu.find((m) => m.id === realId)!;
           cart.push({
             id: `${restaurantId}_${realId}`,
+            menuItemId: realId,
+            restaurantId,
+            restaurantName: restaurant.name,
             name: realItem.name,
-            restaurant: restaurant.name,
             image: realItem.image,
             rating: restaurant.rating,
             price: menuItem.price,
@@ -283,7 +286,7 @@ const RestaurantScreen: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
       >
         <Animated.View style={[styles.coverWrapper, { transform: [{ translateY: coverTranslate }] }]}>
-          <Image source={{ uri: restaurant.coverImage }} style={styles.coverImage} />
+          <Image source={{ uri: safeImageUri(restaurant.coverImage) }} style={styles.coverImage} />
           <View style={styles.coverOverlay} />
         </Animated.View>
 
@@ -425,7 +428,7 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 120 },
   coverWrapper: { height: COVER_HEIGHT, width: W },
   coverImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  coverOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.25)' },
+  coverOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.25)' },
   infoCard: {
     backgroundColor: Colors.white, borderTopLeftRadius: 28, borderTopRightRadius: 28,
     marginTop: -28, padding: 20,

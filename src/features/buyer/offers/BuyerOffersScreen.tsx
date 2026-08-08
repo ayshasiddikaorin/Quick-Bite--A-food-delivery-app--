@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 import OfferCard from '../../../components/OfferCard';
 import { offers as dummyOffers } from '../../../data/dummyData';
@@ -20,6 +21,11 @@ import type { OfferItem } from '../../../models';
 
 const BuyerOffersScreen: React.FC = () => {
   const { status, data, reload } = useApiData<OfferItem[]>(fetchActiveOffers, dummyOffers);
+
+  // Refresh whenever the screen regains focus
+  useFocusEffect(
+    React.useCallback(() => { reload(); }, [reload]),
+  );
 
   const offers = status !== 'loading' ? data : dummyOffers;
 

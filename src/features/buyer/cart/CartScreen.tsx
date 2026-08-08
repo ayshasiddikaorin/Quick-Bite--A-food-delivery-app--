@@ -21,10 +21,8 @@ import OrderSummary from '../../../components/OrderSummary';
 import EmptyCart from './EmptyCart';
 
 import type { CartItem } from '../../../models';
-import { cartItems as seedData } from '../../../data/cartData';
 import {
   getCart,
-  saveCart,
   clearCart,
   increaseQuantity,
   decreaseQuantity,
@@ -50,27 +48,11 @@ const CartScreen: React.FC = () => {
   const [discountPercent, setDiscountPercent] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // ── Load cart from AsyncStorage; seed dummy data on first launch ───────────
+  // ── Load cart from AsyncStorage ───────────────────────────────────────────
   useEffect(() => {
     (async () => {
       const stored = await getCart();
-      if (stored.length === 0) {
-        // First launch: seed with dummy data and persist
-        // Map seedData to match CartItem type from types/index
-        const mapped: CartItem[] = seedData.map((item) => ({
-          id: item.id,
-          name: item.name,
-          restaurant: item.restaurant,
-          image: item.image,
-          rating: item.rating,
-          price: item.price,
-          quantity: item.quantity,
-        }));
-        await saveCart(mapped);
-        setCart(mapped);
-      } else {
-        setCart(stored);
-      }
+      setCart(stored);
       setLoading(false);
     })();
   }, []);
@@ -133,16 +115,15 @@ const CartScreen: React.FC = () => {
     }
   }, []);
 
-  const handleCheckout = useCallback(() => {
-    navigation.navigate('Checkout', { subtotal, discount: discountAmount, tax });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subtotal, discountAmount, tax]);
-
   // ── Calculations ──────────────────────────────────────────────────────────
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discountAmount = parseFloat(((subtotal * discountPercent) / 100).toFixed(2));
   const tax = parseFloat(((subtotal - discountAmount) * TAX_RATE).toFixed(2));
   const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
+
+  const handleCheckout = useCallback(() => {
+    navigation.navigate('Checkout', { subtotal, discount: discountAmount, tax });
+  }, [subtotal, discountAmount, tax]);
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {

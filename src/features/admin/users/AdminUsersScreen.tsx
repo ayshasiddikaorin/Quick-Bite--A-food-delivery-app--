@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,33 +8,27 @@ import {
   StatusBar,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import Colors from '../../../constants/colors';
+import { AuthUser, UserRole } from '../../../models/user';
+import { adminFetchUsers, adminToggleUser } from '../../../services/adminService';
 
 type RoleFilter = 'All' | 'Buyers' | 'Sellers' | 'Riders';
 
-interface MockUser {
-  id: string;
+interface UserRow {
+  userId: string;
   name: string;
   email: string;
-  role: 'buyer' | 'seller' | 'rider';
+  role: UserRole;
   isActive: boolean;
 }
 
-const MOCK_USERS: MockUser[] = [
-  { id: '1', name: 'Aysha Siddika', email: 'aysha@example.com', role: 'buyer', isActive: true },
-  { id: '2', name: 'Ahmed Rahman', email: 'ahmed@restaurant.com', role: 'seller', isActive: true },
-  { id: '3', name: 'Karim Hossain', email: 'karim@rider.com', role: 'rider', isActive: false },
-  { id: '4', name: 'Fatima Begum', email: 'fatima@example.com', role: 'buyer', isActive: true },
-  { id: '5', name: 'Rafiq Uddin', email: 'rafiq@grill.com', role: 'seller', isActive: false },
-  { id: '6', name: 'Mamun Islam', email: 'mamun@rider.com', role: 'rider', isActive: true },
-];
-
-const ROLE_COLORS: Record<MockUser['role'], { color: string; bg: string }> = {
+const ROLE_COLORS: Record<'buyer' | 'seller' | 'rider', { color: string; bg: string }> = {
   buyer: { color: Colors.buyerAccent, bg: '#FFF3EE' },
   seller: { color: Colors.sellerAccent, bg: Colors.successLight },
   rider: { color: Colors.riderAccent, bg: Colors.infoLight },
@@ -46,18 +40,67 @@ const AdminUsersScreen: React.FC = () => {
   const navigation = useNavigation();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<RoleFilter>('All');
-  const [users, setUsers] = useState<MockUser[]>(MOCK_USERS);
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  const toggleStatus = (id: string) => {
-    setUsers((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, isActive: !u.isActive } : u))
-    );
+  const loadUsers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const rows: AuthUser[] = await adminFetchUsers();
+      setUsers(
+        rows
+          .filter((u) => u.role !== 'admin')
+          .map((u) => ({
+            userId: u.userId,
+            name: u.name,
+            email: u.email,
+            role: u.role as UserRow['role'],
+            isActive: u.isActive ?? true,
+          }))
+      );
+    } catch {
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  // Refresh whenever the screen regains focus
+  useFocusEffect(
+    useCallback(() => { loadUsers(); }, [loadUsers]),
+  );
+
+  const toggleStatus = async (id: string) => {
+    if (togglingId) return;
+    setTogglingId(id);
+    try {
+      const updated = await adminToggleUser(id);
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.userId === id
+            ? { ...u, isActive: updated.isActive ?? !u.isActive }
+            : u
+        )
+      );
+    } catch {
+      Alert.alert('Error', 'Could not update user status. Please try again.');
+    } finally {
+      setTogglingId(null);
+    }
   };
 
-  const showActions = (user: MockUser) => {
+  const showActions = (user: UserRow) => {
     Alert.alert(user.name, `Email: ${user.email}`, [
       { text: 'View Profile', onPress: () => {} },
-      { text: user.isActive ? 'Deactivate' : 'Activate', onPress: () => toggleStatus(user.id) },
+      {
+        text: user.isActive ? 'Deactivate' : 'Activate',
+        onPress: () => toggleStatus(user.userId),
+      },
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
@@ -76,8 +119,11 @@ const AdminUsersScreen: React.FC = () => {
     return matchSearch && matchFilter;
   });
 
-  const renderUser = ({ item }: { item: MockUser }) => {
-    const roleStyle = ROLE_COLORS[item.role];
+  const renderUser = ({ item }: { item: UserRow }) => {
+    const role = (item.role === 'buyer' || item.role === 'seller' || item.role === 'rider') ? item.role : 'buyer';
+    const roleStyle = ROLE_COLORS[role];
+    const isBusy = togglingId === item.userId;
+
     return (
       <View style={styles.userCard}>
         {/* Avatar */}
@@ -93,7 +139,7 @@ const AdminUsersScreen: React.FC = () => {
           <Text style={styles.userEmail}>{item.email}</Text>
           <View style={[styles.roleBadge, { backgroundColor: roleStyle.bg }]}>
             <Text style={[styles.roleBadgeText, { color: roleStyle.color }]}>
-              {item.role.charAt(0).toUpperCase() + item.role.slice(1)}
+              {role.charAt(0).toUpperCase() + role.slice(1)}
             </Text>
           </View>
         </View>
@@ -102,12 +148,17 @@ const AdminUsersScreen: React.FC = () => {
         <View style={styles.userControls}>
           <TouchableOpacity
             style={[styles.statusToggle, { backgroundColor: item.isActive ? Colors.successLight : Colors.lightGray }]}
-            onPress={() => toggleStatus(item.id)}
+            onPress={() => toggleStatus(item.userId)}
             activeOpacity={0.85}
+            disabled={isBusy}
           >
-            <Text style={[styles.statusText, { color: item.isActive ? Colors.success : Colors.gray }]}>
-              {item.isActive ? 'Active' : 'Inactive'}
-            </Text>
+            {isBusy ? (
+              <ActivityIndicator size="small" color={Colors.gray} />
+            ) : (
+              <Text style={[styles.statusText, { color: item.isActive ? Colors.success : Colors.gray }]}>
+                {item.isActive ? 'Active' : 'Inactive'}
+              </Text>
+            )}
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -132,7 +183,13 @@ const AdminUsersScreen: React.FC = () => {
           <Ionicons name="arrow-back" size={22} color={Colors.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Manage Users</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity style={styles.backBtn} onPress={loadUsers} activeOpacity={0.8}>
+          {loading ? (
+            <ActivityIndicator size="small" color={Colors.gray} />
+          ) : (
+            <Ionicons name="refresh-outline" size={20} color={Colors.black} />
+          )}
+        </TouchableOpacity>
       </View>
 
       {/* Search Bar */}
@@ -172,22 +229,32 @@ const AdminUsersScreen: React.FC = () => {
 
       {/* Count */}
       <View style={styles.countRow}>
-        <Text style={styles.countText}>{filteredUsers.length} users</Text>
+        <Text style={styles.countText}>{loading ? 'Loading...' : `${filteredUsers.length} users`}</Text>
       </View>
 
-      <FlatList
-        data={filteredUsers}
-        keyExtractor={(item) => item.id}
-        renderItem={renderUser}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="people-outline" size={48} color={Colors.gray} />
-            <Text style={styles.emptyText}>No users found</Text>
-          </View>
-        }
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.adminAccent} />
+          <Text style={styles.emptyText}>Loading users...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredUsers}
+          keyExtractor={(item) => item.userId}
+          renderItem={renderUser}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons name="people-outline" size={48} color={Colors.gray} />
+              <Text style={styles.emptyText}>No users found</Text>
+              <TouchableOpacity style={styles.retryBtn} onPress={loadUsers} activeOpacity={0.85}>
+                <Text style={styles.retryText}>Refresh</Text>
+              </TouchableOpacity>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -298,9 +365,11 @@ const styles = StyleSheet.create({
   roleBadgeText: { fontSize: 11, fontWeight: '700' },
   userControls: { alignItems: 'flex-end', gap: 8 },
   statusToggle: {
+    minWidth: 56,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 10,
+    alignItems: 'center',
   },
   statusText: { fontSize: 11, fontWeight: '700' },
   moreBtn: {
@@ -312,7 +381,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  // Loading
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+
   // Empty
   emptyContainer: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyText: { fontSize: 15, color: Colors.gray, fontWeight: '600' },
+  retryBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: Colors.adminAccent,
+  },
+  retryText: { fontSize: 13, fontWeight: '700', color: Colors.white },
 });

@@ -12,6 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 
 import { UserProfile } from '../../../models';
 import Colors from '../../../constants/colors';
+import { safeImageUri } from '../../../utils/image';
 
 interface Props {
   user: UserProfile;
@@ -30,7 +31,7 @@ const ProfileCard: React.FC<Props> = ({ user }) => {
       <View style={styles.avatarWrapper}>
         {!imageError ? (
           <Image
-            source={{ uri: user.avatar }}
+            source={{ uri: safeImageUri(user.avatar) }}
             style={styles.avatar}
             onError={() => setImageError(true)}
           />

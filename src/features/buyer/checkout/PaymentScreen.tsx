@@ -8,6 +8,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,7 +18,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Colors from '../../../constants/colors';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
-import { clearCart } from '../../../storage/cartStorage';
+import { clearCart, getCart } from '../../../storage/cartStorage';
+import { placeOrder } from '../../../services/orderService';
+import type { CartItem } from '../../../models/cart';
+import type { OrderItem, PlaceOrderPayload } from '../../../models/order';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 type RouteProps = RouteProp<BuyerStackParamList, 'Payment'>;
@@ -94,27 +98,92 @@ const PaymentScreen: React.FC = () => {
   const confirmOrder = async () => {
     setShowConfirm(false);
     setPlacing(true);
-    // Simulate network call
-    await new Promise((r) => setTimeout(r, 1200));
-    await clearCart();
-    setPlacing(false);
-    // Navigate to tracking, replacing the checkout stack so back doesn't return to payment
-    navigation.reset({
-      index: 0,
-      routes: [
-        { name: 'BuyerTabs' },
-        {
-          name: 'OrderTracking',
-          params: {
-            orderId: `#${Math.floor(1000 + Math.random() * 9000)}`,
-            paymentMethod: selectedOption.label,
-            total,
-            address,
-            deliveryType,
+
+    try {
+      const cart = await getCart();
+      if (cart.length === 0) {
+        Alert.alert('Cart is empty', 'Add items to your cart before placing an order.');
+        setPlacing(false);
+        return;
+      }
+
+      const first = cart[0] as CartItem & { restaurant?: string };
+      const restaurantId =
+        first.restaurantId ||
+        (first.id.includes('_') ? first.id.split('_')[0] : first.id);
+      const restaurantName = first.restaurantName || first.restaurant || 'Restaurant';
+
+      const items: OrderItem[] = cart.map((c) => ({
+        menuItemId: c.menuItemId || (c.id.includes('_') ? c.id.split('_')[1] : c.id),
+        name: c.name,
+        image: c.image,
+        price: c.price,
+        quantity: c.quantity,
+      }));
+
+      const payload: PlaceOrderPayload = {
+        restaurantId,
+        restaurantName,
+        items,
+        subtotal,
+        deliveryFee,
+        discount,
+        tax,
+        total,
+        address,
+        deliveryType,
+        paymentMethod: selectedMethod === 'cod' ? 'Cash on Delivery' : selectedOption.label,
+      };
+
+      // Try the real backend. If it's reachable we get a real order id and
+      // the tracker polls live status.
+      const order = await placeOrder(payload);
+      await clearCart();
+      setPlacing(false);
+
+      navigation.reset({
+        index: 0,
+        routes: [
+          { name: 'BuyerTabs' },
+          {
+            name: 'OrderTracking',
+            params: {
+              orderId: order.id,
+              paymentMethod: selectedOption.label,
+              total,
+              address,
+              deliveryType,
+              isDummy: false,
+            },
           },
-        },
-      ],
-    });
+        ],
+      });
+    } catch {
+      // Backend unreachable — simulate the order locally (dummy data mode).
+      await clearCart();
+      setPlacing(false);
+      Alert.alert(
+        'Dummy data mode',
+        'Backend is offline, so the order was simulated locally and will NOT reach the restaurant. Reconnect to place a real order.',
+      );
+      navigation.reset({
+        index: 0,
+        routes: [
+          { name: 'BuyerTabs' },
+          {
+            name: 'OrderTracking',
+            params: {
+              orderId: `#${Math.floor(1000 + Math.random() * 9000)}`,
+              paymentMethod: selectedOption.label,
+              total,
+              address,
+              deliveryType,
+              isDummy: true,
+            },
+          },
+        ],
+      });
+    }
   };
 
   return (

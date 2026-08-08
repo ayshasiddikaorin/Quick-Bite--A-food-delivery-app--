@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import Colors from '../../../constants/colors';
 import { CartItem } from '../../../models';
+import { safeImageUri } from '../../../utils/image';
 
 interface Props {
   item: CartItem;
@@ -29,7 +30,7 @@ const CartItemCard: React.FC<Props> = ({
 
       {/* Food Image */}
       <Image
-        source={{ uri: item.image }}
+        source={{ uri: safeImageUri(item.image) }}
         style={styles.image}
       />
 
@@ -41,7 +42,7 @@ const CartItemCard: React.FC<Props> = ({
         </Text>
 
         <Text style={styles.restaurant}>
-          {item.restaurant}
+          {item.restaurantName}
         </Text>
 
         <View style={styles.ratingRow}>

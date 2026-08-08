@@ -13,6 +13,9 @@ export const restaurants: RestaurantData[] = [
   {
     id: 'r1',
     name: 'Burger Republic',
+    phone: '',
+    totalOrders: 0,
+    isApproved: true,
     coverImage: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80',
     logo: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=200&q=80',
     cuisine: ['Burgers', 'American', 'Fast Food'],
@@ -34,11 +37,14 @@ export const restaurants: RestaurantData[] = [
       { id: 'm7', name: 'Cola', description: 'Chilled Coca-Cola, Pepsi or Sprite — your choice', price: 1.99, image: 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=400&q=80', category: 'Drinks' },
       { id: 'm8', name: 'Chocolate Milkshake', description: 'Thick hand-spun chocolate milkshake with whipped cream', price: 5.49, image: 'https://images.unsplash.com/photo-1572490122747-3968b75cc699?w=400&q=80', category: 'Drinks', isPopular: true },
       { id: 'm9', name: 'Brownie Sundae', description: 'Warm fudge brownie with vanilla ice cream and chocolate drizzle', price: 6.99, image: 'https://images.unsplash.com/photo-1519915028121-7d3463d20b13?w=400&q=80', category: 'Desserts' },
-    ],
+    ] as RestaurantMenuItem[],
   },
   {
     id: 'r2',
     name: 'Pizza Palace',
+    phone: '',
+    totalOrders: 0,
+    isApproved: true,
     coverImage: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80',
     logo: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=200&q=80',
     cuisine: ['Pizza', 'Italian', 'Pasta'],
@@ -59,11 +65,14 @@ export const restaurants: RestaurantData[] = [
       { id: 'm6', name: 'Spaghetti Bolognese', description: 'Slow-cooked beef ragù, parmesan, fresh basil', price: 15.49, image: 'https://images.unsplash.com/photo-1548303740-9d6de2ae5351?w=400&q=80', category: 'Pasta' },
       { id: 'm7', name: 'Garlic Bread', description: 'Toasted ciabatta with garlic herb butter, served warm', price: 4.49, image: 'https://images.unsplash.com/photo-1619894991209-9f9694be045a?w=400&q=80', category: 'Sides' },
       { id: 'm8', name: 'Sparkling Water', description: 'San Pellegrino or Perrier — 500ml', price: 2.49, image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&q=80', category: 'Drinks' },
-    ],
+    ] as RestaurantMenuItem[],
   },
   {
     id: 'r3',
     name: 'Tokyo Garden',
+    phone: '',
+    totalOrders: 0,
+    isApproved: true,
     coverImage: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800&q=80',
     logo: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=200&q=80',
     cuisine: ['Sushi', 'Japanese', 'Asian'],
@@ -85,11 +94,14 @@ export const restaurants: RestaurantData[] = [
       { id: 'm7', name: 'Edamame', description: 'Steamed salted edamame beans', price: 4.99, image: 'https://images.unsplash.com/photo-1615361200141-f45040f367be?w=400&q=80', category: 'Sides' },
       { id: 'm8', name: 'Miso Soup', description: 'Traditional dashi broth with tofu, wakame, spring onion', price: 3.49, image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80', category: 'Sides' },
       { id: 'm9', name: 'Matcha Latte', description: 'Ceremonial grade matcha with steamed oat milk', price: 5.49, image: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?w=400&q=80', category: 'Drinks' },
-    ],
+    ] as RestaurantMenuItem[],
   },
   {
     id: 'r4',
     name: 'Taco Loco',
+    phone: '',
+    totalOrders: 0,
+    isApproved: true,
     coverImage: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=800&q=80',
     logo: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=200&q=80',
     cuisine: ['Mexican', 'Tacos', 'Burritos'],
@@ -109,11 +121,14 @@ export const restaurants: RestaurantData[] = [
       { id: 'm5', name: 'Beef Burrito Bowl', description: 'Cilantro lime rice, black beans, beef, guacamole, sour cream', price: 12.49, image: 'https://images.unsplash.com/photo-1543352634-a1c51d9f1fa7?w=400&q=80', category: 'Burritos' },
       { id: 'm6', name: 'Nachos Grande', description: 'Tortilla chips, melted cheese, jalapeños, guacamole, salsa', price: 7.99, image: 'https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?w=400&q=80', category: 'Sides', isPopular: true },
       { id: 'm7', name: 'Mexican Horchata', description: 'Chilled rice milk with cinnamon and vanilla', price: 3.49, image: 'https://images.unsplash.com/photo-1497534446932-c925b458314e?w=400&q=80', category: 'Drinks' },
-    ],
+    ] as RestaurantMenuItem[],
   },
   {
     id: 'r5',
     name: 'Thai Orchid',
+    phone: '',
+    totalOrders: 0,
+    isApproved: true,
     coverImage: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80',
     logo: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=200&q=80',
     cuisine: ['Thai', 'Asian', 'Noodles'],
@@ -133,7 +148,7 @@ export const restaurants: RestaurantData[] = [
       { id: 'm5', name: 'Tom Yum Soup', description: 'Spicy lemongrass broth, mushrooms, shrimp, galangal, lime leaves', price: 9.99, image: 'https://images.unsplash.com/photo-1569050467447-ce54b3bbc37d?w=400&q=80', category: 'Sides' },
       { id: 'm6', name: 'Spring Rolls (4pc)', description: 'Crispy vegetable spring rolls with sweet chilli dipping sauce', price: 6.99, image: 'https://images.unsplash.com/photo-1541014741259-de529411b96a?w=400&q=80', category: 'Sides', isPopular: true },
       { id: 'm7', name: 'Thai Iced Tea', description: 'Strong-brewed Thai tea with condensed milk over ice', price: 4.49, image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80', category: 'Drinks' },
-    ],
+    ] as RestaurantMenuItem[],
   },
 ];
 
@@ -155,11 +170,11 @@ export const recommendedFoods: RecommendedItem[] = [
 ];
 
 export const offers: OfferItem[] = [
-  { id: '1', title: 'Weekend Special',  description: 'Get extra savings on all burgers',      discount: 25, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80', bgColor: '#FF6B35', validUntil: 'Today Only',   restaurantId: 'r1' },
-  { id: '2', title: 'Pizza Combo',      description: 'Buy any large pizza, get a free drink',  discount: 40, image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80', bgColor: '#E85520', validUntil: 'Ends Sunday',  restaurantId: 'r2' },
-  { id: '3', title: 'Sushi Night',      description: 'Premium sushi at special prices',        discount: 20, image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&q=80', bgColor: '#2196F3', validUntil: 'Mon & Tue',    restaurantId: 'r3' },
-  { id: '4', title: 'Taco Tuesday',     description: 'All tacos at discounted price today',    discount: 30, image: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=600&q=80', bgColor: '#4CAF50', validUntil: 'Tuesdays',     restaurantId: 'r4' },
-  { id: '5', title: 'Thai Lunch Deal',  description: 'Curries and noodles at lunch prices',   discount: 15, image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80', bgColor: '#FF9800', validUntil: '12pm–3pm',     restaurantId: 'r5' },
+  { id: '1', title: 'Weekend Special',  description: 'Get extra savings on all burgers',      discount: 25, image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&q=80', bgColor: '#FF6B35', validUntil: 'Today Only',   restaurantId: 'r1', restaurantName: 'Burger Republic', isActive: true },
+  { id: '2', title: 'Pizza Combo',      description: 'Buy any large pizza, get a free drink',  discount: 40, image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&q=80', bgColor: '#E85520', validUntil: 'Ends Sunday',  restaurantId: 'r2', restaurantName: 'Pizza Palace',   isActive: true },
+  { id: '3', title: 'Sushi Night',      description: 'Premium sushi at special prices',        discount: 20, image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=600&q=80', bgColor: '#2196F3', validUntil: 'Mon & Tue',    restaurantId: 'r3', restaurantName: 'Tokyo Garden',   isActive: true },
+  { id: '4', title: 'Taco Tuesday',     description: 'All tacos at discounted price today',    discount: 30, image: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=600&q=80', bgColor: '#4CAF50', validUntil: 'Tuesdays',     restaurantId: 'r4', restaurantName: 'Taco Loco',      isActive: true },
+  { id: '5', title: 'Thai Lunch Deal',  description: 'Curries and noodles at lunch prices',   discount: 15, image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&q=80', bgColor: '#FF9800', validUntil: '12pm–3pm',     restaurantId: 'r5', restaurantName: 'Thai Orchid',    isActive: true },
 ];
 
 export const banners: BannerItem[] = [

@@ -3,14 +3,31 @@
  * ──────────────
  * All menu item API calls.
  */
-import { apiRequest } from './apiClient';
+import { apiRequest, ApiError } from './apiClient';
 import type { RestaurantMenuItem, MenuItem } from '../models/food';
+import type { Restaurant } from '../models/restaurant';
 
 // ── Public ─────────────────────────────────────────────────────────────────────
 
 /** Get all menu items for a restaurant (used by RestaurantScreen). */
 export function fetchMenuByRestaurant(restaurantId: string): Promise<RestaurantMenuItem[]> {
   return apiRequest<RestaurantMenuItem[]>(`/menu-items/restaurant/${restaurantId}`);
+}
+
+/**
+ * Get the currently logged-in seller's own menu items.
+ * Fetches the seller's restaurant first, then its menu.
+ */
+export async function fetchMyMenuItems(): Promise<MenuItem[]> {
+  let restaurant: Restaurant;
+  try {
+    restaurant = await apiRequest<Restaurant>('/restaurants/seller/me', {}, true);
+  } catch (err: unknown) {
+    // Seller has no registered restaurant yet → nothing to list.
+    if (err instanceof ApiError && err.status === 404) return [];
+    throw err;
+  }
+  return apiRequest<MenuItem[]>(`/menu-items/restaurant/${restaurant.id}`);
 }
 
 /** Get a single menu item by id. */

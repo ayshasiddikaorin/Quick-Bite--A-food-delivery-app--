@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Colors from '../../../constants/colors';
@@ -20,7 +20,7 @@ import ConfirmModal from '../../../components/shared/ConfirmModal';
 import type { RiderStackParamList } from '../../../navigation/RiderNavigator';
 import { useApiData } from '../../../hooks/useApiData';
 import { fetchRiderStats, toggleOnline } from '../../../services/riderService';
-import type { RiderStats } from '../../../services/riderService';
+import type { RiderStats } from '../../../models/dashboard';
 
 type NavProp = NativeStackNavigationProp<RiderStackParamList>;
 const { width: W } = Dimensions.get('window');
@@ -73,6 +73,11 @@ const RiderDashboardScreen: React.FC = () => {
 
   const { status, data: stats, reload } = useApiData<RiderStats>(fetchRiderStats, DUMMY_STATS);
   const s = status !== 'loading' ? stats : DUMMY_STATS;
+
+  // Refresh whenever the screen regains focus
+  useFocusEffect(
+    React.useCallback(() => { reload(); }, [reload]),
+  );
 
   const [isOnline, setIsOnline] = useState(s.isOnline);
 

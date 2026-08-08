@@ -10,6 +10,7 @@ import {
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { FoodItem } from '../models';
 import Colors from '../constants/colors';
+import { safeImageUri } from '../utils/image';
 
 interface Props {
   item: FoodItem;
@@ -32,7 +33,7 @@ const FoodCard: React.FC<Props> = ({ item, onPress }) => {
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.92}>
       {/* Image */}
       <View style={styles.imageContainer}>
-        <Image source={{ uri: item.image }} style={styles.image} />
+        <Image source={{ uri: safeImageUri(item.image) }} style={styles.image} />
 
         {/* Favorite Button */}
         <TouchableOpacity

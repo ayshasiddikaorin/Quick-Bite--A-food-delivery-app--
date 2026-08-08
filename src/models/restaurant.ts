@@ -12,6 +12,7 @@ import { RestaurantMenuItem } from './food';
 export interface RestaurantSummary {
   id: string;
   name: string;
+  phone: string;
   coverImage: string;
   logo: string;
   cuisine: string[];
@@ -40,6 +41,7 @@ export interface RestaurantData extends RestaurantSummary {
 export interface Restaurant {
   id: string;
   name: string;
+  phone: string;
   ownerId: string;
   ownerName: string;
   cuisine: string[];
@@ -55,4 +57,18 @@ export interface Restaurant {
   deliveryFee: number;
   minOrder: number;
   menuCategories: string[];
+}
+
+/** Payload for POST /restaurants (restaurant setup) */
+export interface CreateRestaurantRequest {
+  name: string;
+  phone?: string;
+  coverImage?: string;
+  logo?: string;
+  cuisine?: string[];
+  deliveryTime?: string;
+  deliveryFee?: number;
+  minOrder?: number;
+  address?: string;
+  menuCategories?: string[];
 }

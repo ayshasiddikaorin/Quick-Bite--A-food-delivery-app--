@@ -291,8 +291,17 @@ const RiderRequestsScreen: React.FC = () => {
           <Ionicons name="arrow-back" size={22} color={Colors.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Delivery Requests</Text>
-        <View style={styles.countBadge}>
-          <Text style={styles.countText}>{requests.length}</Text>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={styles.refreshBtn}
+            onPress={() => setRequests(MOCK_REQUESTS)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="refresh-outline" size={18} color={Colors.black} />
+          </TouchableOpacity>
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>{requests.length}</Text>
+          </View>
         </View>
       </View>
 
@@ -378,6 +387,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: { fontSize: 18, fontWeight: '800', color: Colors.black },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  refreshBtn: {
+    width: 36, height: 36, borderRadius: 12,
+    backgroundColor: Colors.lightGray, alignItems: 'center', justifyContent: 'center',
+  },
   countBadge: {
     minWidth: 28,
     height: 28,

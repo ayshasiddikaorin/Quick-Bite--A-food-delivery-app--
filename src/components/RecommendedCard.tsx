@@ -9,6 +9,7 @@ import {
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { RecommendedItem } from '../models';
 import Colors from '../constants/colors';
+import { safeImageUri } from '../utils/image';
 
 interface Props {
   item: RecommendedItem;
@@ -21,7 +22,7 @@ const RecommendedCard: React.FC<Props> = ({ item, onPress }) => {
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.92}>
       {/* Food Image */}
-      <Image source={{ uri: item.image }} style={styles.image} />
+      <Image source={{ uri: safeImageUri(item.image) }} style={styles.image} />
 
       {/* Content */}
       <View style={styles.content}>

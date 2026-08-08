@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 const TIMEOUT_MS = 5000;
 
 export type ApiDataState<T> =
-  | { status: 'loading' }
+  | { status: 'loading'; data: T }
   | { status: 'live';    data: T; fromFallback: false }
   | { status: 'fallback'; data: T; fromFallback: true; error: string };
 
@@ -21,11 +21,12 @@ export function useApiData<T>(
   fallbackData: T,
   deps: unknown[] = [],
 ): ApiDataState<T> & { reload: () => void } {
-  const [state, setState] = useState<ApiDataState<T>>({ status: 'loading' });
+  const [state, setState] = useState<ApiDataState<T>>({ status: 'loading', data: fallbackData });
   const isMounted = useRef(true);
+  const hasWarned = useRef(false);
 
   const load = useCallback(async () => {
-    setState({ status: 'loading' });
+    setState({ status: 'loading', data: fallbackData });
 
     // Race the API call against a timeout
     const timeoutPromise = new Promise<never>((_, reject) =>
@@ -39,7 +40,10 @@ export function useApiData<T>(
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      console.warn('[useApiData] falling back to dummy data:', message);
+      if (!hasWarned.current) {
+        hasWarned.current = true;
+        console.warn('[useApiData] falling back to dummy data:', message);
+      }
       if (isMounted.current) {
         setState({ status: 'fallback', data: fallbackData, fromFallback: true, error: message });
       }

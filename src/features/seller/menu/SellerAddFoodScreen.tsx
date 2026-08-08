@@ -10,20 +10,33 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Colors from '../../../constants/colors';
 import InputField from '../../../components/shared/InputField';
 import PrimaryButton from '../../../components/shared/PrimaryButton';
+import ImagePickField from '../../../components/seller/ImagePickField';
+import { createMenuItem, updateMenuItem } from '../../../services/menuService';
+import type { MenuItem } from '../../../models';
+import type { SellerStackParamList } from '../../../navigation/SellerNavigator';
+
+type NavProp = NativeStackNavigationProp<SellerStackParamList>;
+type AddRouteProps = RouteProp<SellerStackParamList, 'SellerAddFood'>;
 
 const CATEGORIES = ['Burgers', 'Pizza', 'Chicken', 'Dessert', 'Drinks', 'Rice', 'Noodles', 'Salads'];
 
 const SellerAddFoodScreen: React.FC = () => {
-  const navigation = useNavigation();
-  const [name, setName] = useState('');
-  const [price, setPrice] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const navigation = useNavigation<NavProp>();
+  const route = useRoute<AddRouteProps>();
+  const editing = route.params?.item;
+
+  const [name, setName] = useState(editing?.name ?? '');
+  const [price, setPrice] = useState(editing ? String(editing.price) : '');
+  const [description, setDescription] = useState(editing?.description ?? '');
+  const [selectedCategory, setSelectedCategory] = useState(editing?.category ?? '');
+  const [imageUrl, setImageUrl] = useState(editing?.image ?? '');
+  const [isPopular, setIsPopular] = useState(editing?.isPopular ?? false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -38,15 +51,42 @@ const SellerAddFoodScreen: React.FC = () => {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validate()) return;
+
+    const payload = {
+      name: name.trim(),
+      description: description.trim(),
+      price: Number(price),
+      category: selectedCategory,
+      image: imageUrl.trim(),
+      isPopular,
+      isAvailable: true,
+      discount: 0,
+    };
+
     setLoading(true);
-    setTimeout(() => {
+    try {
+      if (editing) {
+        await updateMenuItem(editing.id, payload);
+        Alert.alert('Success', `"${name}" has been updated.`, [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      } else {
+        await createMenuItem(payload);
+        Alert.alert('Success', `"${name}" has been added to your menu!`, [
+          { text: 'OK', onPress: () => navigation.goBack() },
+        ]);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Something went wrong';
+      Alert.alert(
+        editing ? 'Update failed' : 'Could not add item',
+        `${msg}.\nConnect to the live backend, then retry.`,
+      );
+    } finally {
       setLoading(false);
-      Alert.alert('Success', `"${name}" has been added to your menu!`, [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
-    }, 800);
+    }
   };
 
   return (
@@ -57,7 +97,7 @@ const SellerAddFoodScreen: React.FC = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.black} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Food Item</Text>
+        <Text style={styles.headerTitle}>{editing ? 'Edit Food Item' : 'Add Food Item'}</Text>
         <View style={styles.backBtn} />
       </View>
 
@@ -66,12 +106,20 @@ const SellerAddFoodScreen: React.FC = () => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Image upload placeholder */}
-        <TouchableOpacity style={styles.imageUpload} activeOpacity={0.8}>
-          <Ionicons name="camera-outline" size={36} color={Colors.sellerAccent} />
-          <Text style={styles.uploadText}>Tap to upload food photo</Text>
-          <Text style={styles.uploadSub}>JPG, PNG • Max 5MB</Text>
-        </TouchableOpacity>
+        {/* Photo upload */}
+        <ImagePickField value={imageUrl} onChange={setImageUrl} />
+
+        {/* Image URL */}
+        <InputField
+          label="Or set image URL"
+          icon="link-outline"
+          value={imageUrl}
+          onChangeText={setImageUrl}
+          placeholder="https://example.com/food.jpg"
+          keyboardType="url"
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
 
         <View style={styles.form}>
           <InputField
@@ -124,10 +172,25 @@ const SellerAddFoodScreen: React.FC = () => {
             numberOfLines={3}
             error={errors.description}
           />
+
+          {/* Popular toggle */}
+          <TouchableOpacity
+            style={styles.popularRow}
+            onPress={() => setIsPopular((v) => !v)}
+            activeOpacity={0.85}
+          >
+            <View style={[styles.checkbox, isPopular && styles.checkboxOn]}>
+              {isPopular && <Ionicons name="flame" size={14} color={Colors.white} />}
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.popularTitle}>Mark as popular</Text>
+              <Text style={styles.popularSub}>Appears first in the restaurant menu</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         <PrimaryButton
-          title="Add to Menu"
+          title={editing ? 'Save Changes' : 'Add to Menu'}
           onPress={handleSave}
           loading={loading}
           color={Colors.sellerAccent}
@@ -160,20 +223,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: '800', color: Colors.black },
   scroll: { padding: 20, paddingBottom: 40 },
-  imageUpload: {
-    backgroundColor: Colors.successLight,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: Colors.sellerAccent,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 32,
-    marginBottom: 20,
-    gap: 8,
-  },
-  uploadText: { fontSize: 15, fontWeight: '700', color: Colors.sellerAccent },
-  uploadSub: { fontSize: 12, color: Colors.gray },
   form: { marginBottom: 12 },
   categoryLabel: {
     fontSize: 12,
@@ -197,4 +246,26 @@ const styles = StyleSheet.create({
   catChipText: { fontSize: 13, fontWeight: '600', color: Colors.gray },
   catChipTextActive: { color: Colors.sellerAccent, fontWeight: '700' },
   errorText: { fontSize: 12, color: Colors.error, marginBottom: 10, marginLeft: 4 },
+  popularRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Colors.successLight,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 18,
+  },
+  checkbox: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: Colors.white,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxOn: { backgroundColor: Colors.sellerAccent, borderColor: Colors.sellerAccent },
+  popularTitle: { fontSize: 14, fontWeight: '700', color: Colors.black },
+  popularSub: { fontSize: 12, color: Colors.gray, marginTop: 1 },
 });

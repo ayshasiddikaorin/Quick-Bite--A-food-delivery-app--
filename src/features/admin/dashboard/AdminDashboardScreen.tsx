@@ -29,6 +29,8 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 // ── Dummy fallback stats ──────────────────────────────────────────────────────
 const DUMMY_STATS: AdminStats = {
   totalUsers: 1284,
+  totalBuyers: 890,
+  totalSellers: 161,
   totalRestaurants: 96,
   totalRiders: 143,
   totalOrders: 8472,
@@ -36,7 +38,7 @@ const DUMMY_STATS: AdminStats = {
   pendingOrders: 1185,
   cancelledOrders: 508,
   onDeliveryOrders: 1018,
-  totalRevenue: 0,
+  totalRevenue: 428500,
   weeklyOrderData: [120, 145, 98, 167, 134, 189, 156],
 };
 
@@ -125,8 +127,10 @@ const AdminDashboardScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const [showLogout, setShowLogout] = useState(false);
 
-  const { status, data: stats, reload } = useApiData<AdminStats>(fetchAdminStats, DUMMY_STATS);
-  const s = status !== 'loading' ? stats : DUMMY_STATS;
+  const statsState = useApiData<AdminStats>(fetchAdminStats, DUMMY_STATS);
+  const status = statsState.status;
+  const reload = statsState.reload;
+  const s = statsState.status !== 'loading' ? statsState.data : DUMMY_STATS;
 
   const barData  = s.weeklyOrderData ?? DUMMY_STATS.weeklyOrderData;
   const maxVal   = Math.max(...barData, 1);

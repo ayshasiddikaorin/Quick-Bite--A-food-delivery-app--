@@ -6,99 +6,49 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import Colors from '../../../constants/colors';
-import type { OrderStatus } from '../../../models';
+import { useApiData } from '../../../hooks/useApiData';
+import { adminFetchAllOrders } from '../../../services/orderService';
+import type { Order, OrderStatus } from '../../../models';
 
 type FilterType = 'All' | 'Pending' | 'Preparing' | 'On the Way' | 'Delivered' | 'Cancelled';
 
-interface MockOrder {
-  id: string;
-  orderId: string;
-  customer: string;
-  restaurant: string;
-  amount: string;
-  status: OrderStatus;
-  time: string;
+function toOrder(partial: Partial<Order> & { id: string }): Order {
+  const now = new Date().toISOString();
+  return {
+    customerId: partial.customerId ?? '',
+    customerName: partial.customerName ?? 'Unknown customer',
+    restaurantId: partial.restaurantId ?? '',
+    restaurantName: partial.restaurantName ?? 'Restaurant',
+    items: partial.items ?? [],
+    subtotal: partial.subtotal ?? 0,
+    deliveryFee: partial.deliveryFee ?? 0,
+    discount: partial.discount ?? 0,
+    tax: partial.tax ?? 0,
+    total: partial.total ?? 0,
+    status: partial.status ?? 'pending',
+    address: partial.address ?? '',
+    deliveryType: partial.deliveryType ?? 'standard',
+    paymentMethod: partial.paymentMethod ?? '',
+    createdAt: partial.createdAt ?? now,
+    updatedAt: partial.updatedAt ?? now,
+    riderName: partial.riderName,
+    ...partial,
+  };
 }
 
-const MOCK_ORDERS: MockOrder[] = [
-  {
-    id: '1',
-    orderId: '#1042',
-    customer: 'Aysha Siddika',
-    restaurant: 'Spice Garden',
-    amount: '৳480',
-    status: 'on_the_way',
-    time: '10 min ago',
-  },
-  {
-    id: '2',
-    orderId: '#1041',
-    customer: 'Rafiq Ahmed',
-    restaurant: 'Burger House',
-    amount: '৳320',
-    status: 'preparing',
-    time: '15 min ago',
-  },
-  {
-    id: '3',
-    orderId: '#1040',
-    customer: 'Fatima Begum',
-    restaurant: 'Sultan Dine',
-    amount: '৳650',
-    status: 'delivered',
-    time: '32 min ago',
-  },
-  {
-    id: '4',
-    orderId: '#1039',
-    customer: 'Mamun Islam',
-    restaurant: 'Spice Garden',
-    amount: '৳215',
-    status: 'pending',
-    time: '40 min ago',
-  },
-  {
-    id: '5',
-    orderId: '#1038',
-    customer: 'Nusrat Jahan',
-    restaurant: 'Green Leaf Café',
-    amount: '৳180',
-    status: 'cancelled',
-    time: '1 hr ago',
-  },
-  {
-    id: '6',
-    orderId: '#1037',
-    customer: 'Karim Hossain',
-    restaurant: 'Burger House',
-    amount: '৳290',
-    status: 'delivered',
-    time: '1 hr ago',
-  },
-  {
-    id: '7',
-    orderId: '#1036',
-    customer: 'Sadia Islam',
-    restaurant: 'Sultan Dine',
-    amount: '৳520',
-    status: 'preparing',
-    time: '2 hr ago',
-  },
-  {
-    id: '8',
-    orderId: '#1035',
-    customer: 'Rahim Uddin',
-    restaurant: 'Spice Garden',
-    amount: '৳390',
-    status: 'pending',
-    time: '2 hr ago',
-  },
+const DUMMY_ORDERS: Order[] = [
+  toOrder({ id: 'd1', customerName: 'Aysha Siddika', restaurantName: 'Burger Republic', total: 480, status: 'on_the_way', createdAt: new Date(Date.now() - 600000).toISOString() }),
+  toOrder({ id: 'd2', customerName: 'Rafiq Ahmed', restaurantName: 'Pizza Palace', total: 320, status: 'preparing', createdAt: new Date(Date.now() - 900000).toISOString() }),
+  toOrder({ id: 'd3', customerName: 'Fatima Begum', restaurantName: 'Tokyo Garden', total: 650, status: 'delivered', createdAt: new Date(Date.now() - 1920000).toISOString() }),
+  toOrder({ id: 'd4', customerName: 'Mamun Islam', restaurantName: 'Burger Republic', total: 215, status: 'pending', createdAt: new Date(Date.now() - 2400000).toISOString() }),
+  toOrder({ id: 'd5', customerName: 'Nusrat Jahan', restaurantName: 'Taco Loco', total: 180, status: 'cancelled', createdAt: new Date(Date.now() - 3600000).toISOString() }),
 ];
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; bg: string }> = {
@@ -123,46 +73,59 @@ const filterMatchesStatus = (filter: FilterType, status: OrderStatus): boolean =
   return true;
 };
 
+const formatTime = (iso: string) => {
+  const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (isNaN(diff) || diff < 0) return 'just now';
+  return diff < 60 ? `${diff} min ago` : `${Math.floor(diff / 60)} hr ago`;
+};
+
 const AdminOrdersScreen: React.FC = () => {
   const navigation = useNavigation();
   const [activeFilter, setActiveFilter] = useState<FilterType>('All');
 
-  const filteredOrders = MOCK_ORDERS.filter((o) => filterMatchesStatus(activeFilter, o.status));
+  const statsState = useApiData<Order[]>(() => adminFetchAllOrders(), DUMMY_ORDERS);
+  const orders = statsState.status !== 'loading' ? statsState.data : DUMMY_ORDERS;
+  const status = statsState.status;
+  const reload = statsState.reload;
 
-  const renderOrder = ({ item }: { item: MockOrder }) => {
+  // Refresh whenever the screen regains focus
+  useFocusEffect(
+    React.useCallback(() => { reload(); }, [reload]),
+  );
+
+  const filteredOrders = orders.filter((o) => filterMatchesStatus(activeFilter, o.status));
+
+  const renderOrder = ({ item }: { item: Order }) => {
     const statusCfg = STATUS_CONFIG[item.status];
     return (
       <View style={styles.orderCard}>
-        {/* Top row */}
         <View style={styles.orderTop}>
-          <Text style={styles.orderId}>{item.orderId}</Text>
+          <Text style={styles.orderId}>#{item.id.slice(-6).toUpperCase()}</Text>
           <View style={[styles.statusBadge, { backgroundColor: statusCfg.bg }]}>
             <View style={[styles.statusDot, { backgroundColor: statusCfg.color }]} />
             <Text style={[styles.statusText, { color: statusCfg.color }]}>{statusCfg.label}</Text>
           </View>
         </View>
 
-        {/* Customer / Restaurant row */}
         <View style={styles.orderMid}>
           <View style={styles.orderMidItem}>
             <Ionicons name="person-outline" size={13} color={Colors.gray} />
-            <Text style={styles.orderMidText}>{item.customer}</Text>
+            <Text style={styles.orderMidText}>{item.customerName}</Text>
           </View>
           <View style={styles.orderMidItem}>
             <Ionicons name="storefront-outline" size={13} color={Colors.gray} />
-            <Text style={styles.orderMidText}>{item.restaurant}</Text>
+            <Text style={styles.orderMidText}>{item.restaurantName}</Text>
           </View>
         </View>
 
-        {/* Bottom row */}
         <View style={styles.orderBottom}>
           <View style={styles.orderBottomItem}>
             <Ionicons name="cash-outline" size={14} color={Colors.sellerAccent} />
-            <Text style={styles.orderAmount}>{item.amount}</Text>
+            <Text style={styles.orderAmount}>৳{item.total.toFixed(0)}</Text>
           </View>
           <View style={styles.orderBottomItem}>
             <Ionicons name="time-outline" size={13} color={Colors.gray} />
-            <Text style={styles.orderTime}>{item.time}</Text>
+            <Text style={styles.orderTime}>{formatTime(item.createdAt)}</Text>
           </View>
         </View>
       </View>
@@ -179,8 +142,19 @@ const AdminOrdersScreen: React.FC = () => {
           <Ionicons name="arrow-back" size={22} color={Colors.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>All Orders</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity style={styles.backBtn} onPress={reload} activeOpacity={0.8}>
+          {status === 'loading'
+            ? <ActivityIndicator size="small" color={Colors.primary} />
+            : <Ionicons name="refresh-outline" size={20} color={Colors.black} />}
+        </TouchableOpacity>
       </View>
+
+      {status === 'fallback' && (
+        <View style={styles.fallbackBanner}>
+          <Ionicons name="cloud-offline-outline" size={13} color={Colors.warning} />
+          <Text style={styles.fallbackText}>Dummy data mode · backend offline — showing sample orders</Text>
+        </View>
+      )}
 
       {/* Filter Chips (horizontal scroll) */}
       <View style={styles.filterWrapper}>
@@ -249,6 +223,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: { fontSize: 17, fontWeight: '800', color: Colors.black },
+  fallbackBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#FFF8E1', paddingHorizontal: 16, paddingVertical: 8,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  fallbackText: { fontSize: 11, color: Colors.warning, fontWeight: '700', flex: 1 },
 
   // Filters
   filterWrapper: {

@@ -47,6 +47,7 @@ export type BuyerStackParamList = {
     total: number;
     address: string;
     deliveryType: 'standard' | 'express';
+    isDummy?: boolean;
   };
 };
 

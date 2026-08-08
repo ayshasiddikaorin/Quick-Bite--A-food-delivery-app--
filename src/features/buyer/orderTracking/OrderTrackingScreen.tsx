@@ -14,7 +14,9 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Colors from '../../../constants/colors';
+import { fetchOrderById } from '../../../services/orderService';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
+import type { OrderStatus } from '../../../models';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 type RouteProps = RouteProp<BuyerStackParamList, 'OrderTracking'>;
@@ -62,20 +64,60 @@ const STEPS: Step[] = [
   },
 ];
 
-// Auto-advance current step every few seconds (demo purposes)
 const STEP_KEYS: StepKey[] = ['confirmed', 'preparing', 'ready', 'on_the_way', 'delivered'];
+
+// Backend status → timeline step index
+function statusToIndex(status?: OrderStatus): number {
+  switch (status) {
+    case 'pending':
+    case 'confirmed': return 0;
+    case 'preparing': return 1;
+    case 'ready': return 2;
+    case 'on_the_way': return 3;
+    case 'delivered': return 4;
+    case 'cancelled': return 0;
+    default: return 1;
+  }
+}
+
+const ETA_LABELS: Record<string, string> = {
+  confirmed: '~35 min',
+  preparing: '~28 min',
+  ready: '~18 min',
+  on_the_way: '~8 min',
+  delivered: 'Delivered!',
+};
 
 const OrderTrackingScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteProps>();
 
-  const { orderId, paymentMethod, total, address, deliveryType } = route.params;
+  const { orderId, paymentMethod, total, address, deliveryType, isDummy } = route.params;
 
   const [currentStepIndex, setCurrentStepIndex] = useState(1); // start at "Preparing"
+  const [riderName, setRiderName] = useState<string | null>(null);
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
+
+  // Live polling: refresh the real order status every few seconds.
+  useEffect(() => {
+    if (isDummy) return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const order = await fetchOrderById(orderId);
+        if (cancelled) return;
+        setCurrentStepIndex(statusToIndex(order.status));
+        if (order.riderName) setRiderName(order.riderName);
+      } catch { /* backend offline — keep last known */ }
+    };
+    poll();
+    const interval = setInterval(poll, 6000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [orderId, isDummy]);
 
   // Pulse animation for active step
   useEffect(() => {
+    if (isDummy) return;
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.15, duration: 700, useNativeDriver: true }),
@@ -84,25 +126,18 @@ const OrderTrackingScreen: React.FC = () => {
     );
     loop.start();
     return () => loop.stop();
-  }, [pulseAnim]);
+  }, [pulseAnim, isDummy]);
 
-  // Auto-advance through steps every 4s (demo)
+  // Demo auto-advance (only in dummy data mode)
   useEffect(() => {
+    if (!isDummy) return;
     if (currentStepIndex >= STEP_KEYS.length - 1) return;
     const timer = setTimeout(() => setCurrentStepIndex((i) => i + 1), 4000);
     return () => clearTimeout(timer);
-  }, [currentStepIndex]);
+  }, [currentStepIndex, isDummy]);
 
-  const currentStep = STEPS[currentStepIndex];
+  const currentStep = currentStepIndex >= 0 ? STEPS[currentStepIndex] : STEPS[0];
   const isDelivered = currentStepIndex === STEP_KEYS.length - 1;
-
-  const ETA_LABELS: Record<string, string> = {
-    confirmed: '~35 min',
-    preparing: '~28 min',
-    ready: '~18 min',
-    on_the_way: '~8 min',
-    delivered: 'Delivered!',
-  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -122,6 +157,13 @@ const OrderTrackingScreen: React.FC = () => {
           <Ionicons name="help-circle-outline" size={22} color={Colors.primary} />
         </TouchableOpacity>
       </View>
+
+      {isDummy && (
+        <View style={styles.fallbackBanner}>
+          <Ionicons name="cloud-offline-outline" size={13} color={Colors.warning} />
+          <Text style={styles.fallbackText}>Dummy data mode · backend offline — simulated order</Text>
+        </View>
+      )}
 
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -189,7 +231,7 @@ const OrderTrackingScreen: React.FC = () => {
               <Text style={styles.riderAvatarText}>KH</Text>
             </View>
             <View style={styles.riderInfo}>
-              <Text style={styles.riderName}>Karim Hossain</Text>
+              <Text style={styles.riderName}>{riderName ?? 'Karim Hossain'}</Text>
               <View style={styles.riderMeta}>
                 <Ionicons name="star" size={12} color={Colors.warning} />
                 <Text style={styles.riderRating}>4.9</Text>
@@ -331,6 +373,14 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: '800', color: Colors.black },
   scroll: { padding: 20, paddingBottom: 40 },
 
+  // Dummy-data banner
+  fallbackBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#FFF8E1', paddingHorizontal: 16, paddingVertical: 8,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  fallbackText: { fontSize: 11, color: Colors.warning, fontWeight: '700', flex: 1 },
+
   // ETA card
   etaCard: {
     flexDirection: 'row',
@@ -365,7 +415,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
-  mapBg: { ...StyleSheet.absoluteFillObject },
+  mapBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   mapLineH: {
     position: 'absolute',
     left: 0,

@@ -4,13 +4,27 @@
  * All restaurant-related API calls, separated by role.
  */
 import { apiRequest } from './apiClient';
-import type { RestaurantSummary, Restaurant } from '../models/restaurant';
+import { fetchMenuByRestaurant } from './menuService';
+import type { RestaurantSummary, RestaurantData, Restaurant, CreateRestaurantRequest } from '../models/restaurant';
 
 // ── Public ─────────────────────────────────────────────────────────────────────
 
 /** Get all approved restaurants (home screen list). */
 export function fetchRestaurants(): Promise<RestaurantSummary[]> {
   return apiRequest<RestaurantSummary[]>('/restaurants');
+}
+
+/**
+ * Get all restaurants joined with their menus (home screen).
+ * The backend list endpoint does not include `menu`, so each restaurant's
+ * menu is fetched individually and attached client-side.
+ */
+export async function fetchRestaurantsWithMenus(): Promise<RestaurantData[]> {
+  const summaries = await fetchRestaurants();
+  const withMenu = await Promise.all(
+    summaries.map(async (r) => ({ ...r, menu: await fetchMenuByRestaurant(r.id) })),
+  );
+  return withMenu;
 }
 
 /** Get a single restaurant by id (without menu — fetch menu separately). */
@@ -23,6 +37,14 @@ export function fetchRestaurantById(id: string): Promise<RestaurantSummary> {
 /** Get the logged-in seller's own restaurant. */
 export function fetchMyRestaurant(): Promise<Restaurant> {
   return apiRequest<Restaurant>('/restaurants/seller/me', {}, true);
+}
+
+/** Create the seller's restaurant (first-time setup). */
+export function createRestaurant(data: CreateRestaurantRequest): Promise<Restaurant> {
+  return apiRequest<Restaurant>('/restaurants', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }, true);
 }
 
 /** Update the seller's restaurant details. */

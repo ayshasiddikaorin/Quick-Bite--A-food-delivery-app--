@@ -19,4 +19,5 @@ export interface AuthUser {
   memberSince: string;  // ISO date string
   restaurantName?: string;
   vehicleType?: string;
+  isActive?: boolean;   // only present in admin list/toggle responses
 }

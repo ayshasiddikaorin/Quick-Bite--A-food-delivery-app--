@@ -10,6 +10,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { OfferItem } from '../models';
 import Colors from '../constants/colors';
+import { safeImageUri } from '../utils/image';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH * 0.78;
@@ -27,7 +28,7 @@ const OfferCard: React.FC<Props> = ({ item, fullWidth = false, onPress }) => {
       onPress={onPress}
       activeOpacity={0.9}
     >
-      <Image source={{ uri: item.image }} style={styles.bgImage} />
+      <Image source={{ uri: safeImageUri(item.image) }} style={styles.bgImage} />
       <View style={styles.overlay} />
 
       {/* Discount Badge */}

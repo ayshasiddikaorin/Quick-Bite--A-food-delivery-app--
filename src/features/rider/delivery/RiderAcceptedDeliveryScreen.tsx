@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     height: 160, borderRadius: 18, backgroundColor: '#E8F0E4',
     overflow: 'hidden', marginBottom: 14, position: 'relative',
   },
-  mapBg: { ...StyleSheet.absoluteFillObject },
+  mapBg: { ...StyleSheet.absoluteFill },
   mapLineH: { position: 'absolute', left: 0, right: 0, height: 1, backgroundColor: 'rgba(255,255,255,0.5)' },
   mapLineV: { position: 'absolute', top: 0, bottom: 0, width: 1, backgroundColor: 'rgba(255,255,255,0.5)' },
   riderPin: {

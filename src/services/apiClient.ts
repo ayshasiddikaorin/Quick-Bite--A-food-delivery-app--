@@ -20,6 +20,25 @@ interface ApiEnvelope<T> {
 }
 
 /**
+ * The backend serializes MongoDB documents, so ids come back as `_id`.
+ * The app's models expect `id` — normalize every nested `_id` key to `id`.
+ */
+function normalizeMongoId<T>(data: T): T {
+  if (Array.isArray(data)) {
+    return data.map(normalizeMongoId) as unknown as T;
+  }
+  if (data && typeof data === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data)) {
+      const mappedKey = key === '_id' ? 'id' : key;
+      out[mappedKey] = normalizeMongoId(value);
+    }
+    return out as T;
+  }
+  return data;
+}
+
+/**
  * Make an HTTP request against the backend.
  * Automatically unwraps the ApiResponse envelope → returns `data` directly.
  * Throws ApiError on non-success responses.
@@ -49,5 +68,5 @@ export async function apiRequest<T>(
     );
   }
 
-  return envelope.data as T;
+  return normalizeMongoId(envelope.data) as T;
 }

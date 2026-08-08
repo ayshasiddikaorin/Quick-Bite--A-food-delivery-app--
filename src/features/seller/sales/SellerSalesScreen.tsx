@@ -6,32 +6,42 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 import Colors from '../../../constants/colors';
+import { useApiData } from '../../../hooks/useApiData';
+import { fetchSellerStats } from '../../../services/orderService';
+import type { SellerStats } from '../../../models';
 
-const { width: W } = Dimensions.get('window');
-
-const BAR_DATA = [42, 68, 55, 80, 73, 90, 65];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const MAX_VAL = Math.max(...BAR_DATA);
 
-const DAILY_SALES = [
-  { day: 'Monday', amount: '৳3,360' },
-  { day: 'Tuesday', amount: '৳5,440' },
-  { day: 'Wednesday', amount: '৳4,400' },
-  { day: 'Thursday', amount: '৳6,400' },
-  { day: 'Friday', amount: '৳5,840' },
-  { day: 'Saturday', amount: '৳7,200' },
-  { day: 'Sunday', amount: '৳5,200' },
-];
+const EMPTY_STATS: SellerStats = {
+  newOrders: 0,
+  preparing: 0,
+  completed: 0,
+  totalSales: 0,
+  weeklyData: [0, 0, 0, 0, 0, 0, 0],
+};
+
+const WEEKDAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 const SellerSalesScreen: React.FC = () => {
   const navigation = useNavigation();
+
+  const statsState = useApiData<SellerStats>(fetchSellerStats, EMPTY_STATS);
+  const status = statsState.status;
+  const stats = statsState.status !== 'loading' ? statsState.data : EMPTY_STATS;
+  const reload = statsState.reload;
+
+  const weeklyData = stats.weeklyData.length === 7 ? stats.weeklyData : EMPTY_STATS.weeklyData;
+  const weeklyTotal = stats.totalSales;
+  const maxVal = Math.max(...weeklyData, 1);
+  const todayIdx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+  const bestIdx = weeklyData.indexOf(Math.max(...weeklyData));
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -47,8 +57,19 @@ const SellerSalesScreen: React.FC = () => {
           <Ionicons name="arrow-back" size={22} color={Colors.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Sales Report</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity style={styles.backBtn} onPress={reload} activeOpacity={0.8}>
+          {status === 'loading'
+            ? <ActivityIndicator size="small" color={Colors.primary} />
+            : <Ionicons name="refresh-outline" size={20} color={Colors.black} />}
+        </TouchableOpacity>
       </View>
+
+      {status === 'fallback' && (
+        <View style={styles.fallbackBanner}>
+          <Ionicons name="cloud-offline-outline" size={13} color={Colors.warning} />
+          <Text style={styles.fallbackText}>Backend offline — live sales unavailable</Text>
+        </View>
+      )}
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
@@ -57,22 +78,22 @@ const SellerSalesScreen: React.FC = () => {
           <View style={styles.totalCardTop}>
             <View>
               <Text style={styles.totalLabel}>Weekly Total Sales</Text>
-              <Text style={styles.totalAmount}>৳28,540</Text>
+              <Text style={styles.totalAmount}>৳{weeklyTotal.toLocaleString()}</Text>
             </View>
             <View style={styles.growthBadge}>
               <Ionicons name="trending-up" size={16} color={Colors.sellerAccent} />
-              <Text style={styles.growthText}>+12.5% this week</Text>
+              <Text style={styles.growthText}>{weeklyData.reduce((s, v) => s + v, 0)} orders</Text>
             </View>
           </View>
           <View style={styles.totalDivider} />
           <View style={styles.totalMeta}>
             <View style={styles.totalMetaItem}>
-              <Ionicons name="calendar-outline" size={16} color={Colors.gray} />
-              <Text style={styles.totalMetaText}>Mon 12 – Sun 18 Jan</Text>
+              <Ionicons name="receipt-outline" size={16} color={Colors.gray} />
+              <Text style={styles.totalMetaText}>{stats.completed} completed</Text>
             </View>
             <View style={styles.totalMetaItem}>
-              <Ionicons name="receipt-outline" size={16} color={Colors.gray} />
-              <Text style={styles.totalMetaText}>473 orders</Text>
+              <Ionicons name="calendar-outline" size={16} color={Colors.gray} />
+              <Text style={styles.totalMetaText}>This week</Text>
             </View>
           </View>
         </View>
@@ -81,21 +102,21 @@ const SellerSalesScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>Daily Breakdown (Orders)</Text>
         <View style={styles.chartCard}>
           <View style={styles.barsRow}>
-            {BAR_DATA.map((val, i) => (
+            {weeklyData.map((val, i) => (
               <View key={i} style={styles.barCol}>
-                <Text style={[styles.barValueLabel, i === 5 && { color: Colors.sellerAccent }]}>
+                <Text style={[styles.barValueLabel, i === todayIdx && { color: Colors.sellerAccent }]}>
                   {val}
                 </Text>
                 <View
                   style={[
                     styles.bar,
                     {
-                      height: (val / MAX_VAL) * 100,
-                      backgroundColor: i === 5 ? Colors.sellerAccent : '#C8E6C9',
+                      height: (val / maxVal) * 100,
+                      backgroundColor: i === todayIdx ? Colors.sellerAccent : '#C8E6C9',
                     },
                   ]}
                 />
-                <Text style={[styles.barLabel, i === 5 && { color: Colors.sellerAccent, fontWeight: '700' }]}>
+                <Text style={[styles.barLabel, i === todayIdx && { color: Colors.sellerAccent, fontWeight: '700' }]}>
                   {DAYS[i]}
                 </Text>
               </View>
@@ -106,30 +127,30 @@ const SellerSalesScreen: React.FC = () => {
         {/* Daily Sales List */}
         <Text style={styles.sectionTitle}>Sales by Day</Text>
         <View style={styles.listCard}>
-          {DAILY_SALES.map((item, index) => (
-            <View key={item.day} style={[styles.listRow, index < DAILY_SALES.length - 1 && styles.listRowBorder]}>
+          {WEEKDAY_NAMES.map((dayName, index) => (
+            <View key={dayName} style={[styles.listRow, index < WEEKDAY_NAMES.length - 1 && styles.listRowBorder]}>
               <View style={styles.listLeft}>
                 <View
                   style={[
                     styles.dayDot,
-                    { backgroundColor: item.day === 'Saturday' ? Colors.sellerAccent : Colors.successLight },
+                    { backgroundColor: index === bestIdx ? Colors.sellerAccent : Colors.successLight },
                   ]}
                 />
                 <Text style={[
                   styles.dayName,
-                  item.day === 'Saturday' && { color: Colors.sellerAccent, fontWeight: '800' },
+                  index === bestIdx && { color: Colors.sellerAccent, fontWeight: '800' },
                 ]}>
-                  {item.day}
+                  {dayName}
                 </Text>
               </View>
               <View style={styles.listRight}>
                 <Text style={[
                   styles.dayAmount,
-                  item.day === 'Saturday' && { color: Colors.sellerAccent },
+                  index === bestIdx && { color: Colors.sellerAccent },
                 ]}>
-                  {item.amount}
+                  {weeklyData[index]} orders
                 </Text>
-                {item.day === 'Saturday' && (
+                {index === bestIdx && (
                   <View style={styles.bestBadge}>
                     <Text style={styles.bestBadgeText}>Best</Text>
                   </View>
@@ -167,6 +188,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: { fontSize: 17, fontWeight: '800', color: Colors.black },
+  fallbackBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#FFF8E1', paddingHorizontal: 16, paddingVertical: 8,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  fallbackText: { fontSize: 11, color: Colors.warning, fontWeight: '700', flex: 1 },
   scroll: { padding: 20, paddingBottom: 40 },
 
   // Total card

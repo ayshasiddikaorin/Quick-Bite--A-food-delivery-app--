@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import Colors from '../../../constants/colors';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
@@ -18,14 +18,7 @@ import { useApiData } from '../../../hooks/useApiData';
 import { fetchSellerOrders, advanceOrderSeller } from '../../../services/orderService';
 import type { Order, OrderStatus } from '../../../models';
 
-// ── Dummy fallback ────────────────────────────────────────────────────────────
-const DUMMY_ORDERS: Order[] = [
-  { id: '#1042', customerId: 'c1', customerName: 'Aysha S.',   restaurantId: 'r1', restaurantName: 'My Restaurant', items: [], subtotal: 580, deliveryFee: 0, total: 580, status: 'pending',   address: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: '#1041', customerId: 'c2', customerName: 'Karim H.',   restaurantId: 'r1', restaurantName: 'My Restaurant', items: [], subtotal: 420, deliveryFee: 0, total: 420, status: 'pending',   address: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: '#1040', customerId: 'c3', customerName: 'Rina B.',    restaurantId: 'r1', restaurantName: 'My Restaurant', items: [], subtotal: 350, deliveryFee: 0, total: 350, status: 'preparing', address: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: '#1039', customerId: 'c4', customerName: 'Rafi M.',    restaurantId: 'r1', restaurantName: 'My Restaurant', items: [], subtotal: 620, deliveryFee: 0, total: 620, status: 'preparing', address: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: '#1038', customerId: 'c5', customerName: 'Sara K.',    restaurantId: 'r1', restaurantName: 'My Restaurant', items: [], subtotal: 390, deliveryFee: 0, total: 390, status: 'delivered', address: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-];
+const EMPTY_ORDERS: Order[] = [];
 
 type TabKey = 'new' | 'preparing' | 'completed';
 
@@ -47,8 +40,13 @@ const SellerOrdersScreen: React.FC = () => {
   const [confirmId, setConfirmId]     = useState<string | null>(null);
   const [advancing, setAdvancing]     = useState(false);
 
-  const { status, data: orders, reload } = useApiData<Order[]>(fetchSellerOrders, DUMMY_ORDERS);
-  const liveOrders = status !== 'loading' ? orders : DUMMY_ORDERS;
+  const { status, data: orders, reload } = useApiData<Order[]>(fetchSellerOrders, EMPTY_ORDERS);
+  const liveOrders = status !== 'loading' ? orders : EMPTY_ORDERS;
+
+  // Refresh whenever the screen regains focus (e.g. after a new order arrives)
+  useFocusEffect(
+    React.useCallback(() => { reload(); }, [reload]),
+  );
 
   const filtered = liveOrders.filter((o) => STATUS_MAP[activeTab].includes(o.status));
   const tabCfg   = TABS.find((t) => t.key === activeTab)!;
@@ -87,7 +85,7 @@ const SellerOrdersScreen: React.FC = () => {
       {status === 'fallback' && (
         <View style={styles.fallbackBanner}>
           <Ionicons name="wifi-outline" size={13} color={Colors.warning} />
-          <Text style={styles.fallbackText}>Offline preview · tap refresh to load live orders</Text>
+          <Text style={styles.fallbackText}>Backend offline · live orders unavailable</Text>
         </View>
       )}
 
