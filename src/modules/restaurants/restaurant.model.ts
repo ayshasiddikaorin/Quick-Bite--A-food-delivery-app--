@@ -4,6 +4,7 @@ export interface IRestaurant extends Document {
   name: string;
   ownerId: mongoose.Types.ObjectId;
   ownerName: string;
+  phone: string;
   coverImage: string;
   logo: string;
   cuisine: string[];
@@ -24,6 +25,7 @@ const restaurantSchema = new Schema<IRestaurant>(
     name: { type: String, required: true, trim: true },
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     ownerName: { type: String, required: true },
+    phone: { type: String, default: '' },
     coverImage: { type: String, default: '' },
     logo: { type: String, default: '' },
     cuisine: [{ type: String }],

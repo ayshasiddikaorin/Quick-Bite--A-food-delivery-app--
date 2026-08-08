@@ -1,6 +1,7 @@
 /** Payload for PATCH /restaurants/seller/me */
 export interface UpdateRestaurantDTO {
   name?: string;
+  phone?: string;
   coverImage?: string;
   logo?: string;
   cuisine?: string[];

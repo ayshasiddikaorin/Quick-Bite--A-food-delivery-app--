@@ -10,6 +10,7 @@ import { IOrder } from './order.model';
 import { IOrderRepository } from './interfaces';
 import { IUserRepository } from '../users/interfaces';
 import { IRestaurantRepository } from '../restaurants/interfaces';
+import { IRiderRepository } from '../riders/interfaces';
 import { PlaceOrderDTO, SellerStatsDTO } from './dto';
 
 // ── Allowed status transitions ────────────────────────────────────────────────
@@ -31,6 +32,7 @@ export class OrderService {
     private readonly repo:           IOrderRepository,
     private readonly userRepo:       IUserRepository,
     private readonly restaurantRepo: IRestaurantRepository,
+    private readonly riderRepo:      IRiderRepository,
   ) {}
 
   // ── Buyer ──────────────────────────────────────────────────────────────────
@@ -89,7 +91,7 @@ export class OrderService {
 
   async getRestaurantOrders(sellerId: string): Promise<IOrder[]> {
     const restaurant = await this.restaurantRepo.findByOwnerId(sellerId);
-    if (!restaurant) throw new AppError('No restaurant found for this seller', 404);
+    if (!restaurant) return [];
     return this.repo.findByRestaurant(String(restaurant._id));
   }
 
@@ -111,7 +113,11 @@ export class OrderService {
 
   async getSellerStats(sellerId: string): Promise<SellerStatsDTO> {
     const restaurant = await this.restaurantRepo.findByOwnerId(sellerId);
-    if (!restaurant) throw new AppError('No restaurant found for this seller', 404);
+    // New seller without a registered restaurant yet → return honest zeros,
+    // never a 404 that forces the app into dummy-data fallback.
+    if (!restaurant) {
+      return { newOrders: 0, preparing: 0, completed: 0, totalSales: 0, weeklyData: [0, 0, 0, 0, 0, 0, 0] };
+    }
 
     const restaurantId = String(restaurant._id);
 
@@ -171,7 +177,34 @@ export class OrderService {
     const next = RIDER_ADVANCE[order.status];
     if (!next) throw new AppError(`Cannot advance order from "${order.status}"`, 400);
 
-    return (await this.repo.updateStatus(orderId, next))!;
+    const updated = (await this.repo.updateStatus(orderId, next))!;
+
+    // Credit the rider's earnings once a delivery is completed
+    if (next === 'delivered') {
+      await this.creditRiderEarnings(riderId, order.deliveryFee ?? 0);
+    }
+
+    return updated;
+  }
+
+  /** Increment a rider's delivery + earnings counters when an order is delivered. */
+  private async creditRiderEarnings(riderId: string, amount: number): Promise<void> {
+    const rider = await this.riderRepo.findByUserId(riderId);
+    if (!rider) return; // rider has no profile yet — nothing to credit
+
+    const weekly =
+      Array.isArray(rider.weeklyEarnings) && rider.weeklyEarnings.length === 7
+        ? [...rider.weeklyEarnings]
+        : [0, 0, 0, 0, 0, 0, 0];
+    const mondayIndex = (new Date().getDay() + 6) % 7; // 0 = Monday
+    weekly[mondayIndex] = (weekly[mondayIndex] ?? 0) + amount;
+
+    await this.riderRepo.update(String(rider._id), {
+      totalDeliveries: (rider.totalDeliveries ?? 0) + 1,
+      totalEarnings:   (rider.totalEarnings ?? 0) + amount,
+      todayEarnings:   (rider.todayEarnings ?? 0) + amount,
+      weeklyEarnings:  weekly,
+    });
   }
 
   // ── Admin ──────────────────────────────────────────────────────────────────

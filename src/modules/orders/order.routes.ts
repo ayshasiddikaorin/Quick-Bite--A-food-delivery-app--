@@ -4,11 +4,17 @@ import { OrderService } from './order.service';
 import { OrderRepository } from './order.repository';
 import { UserRepository } from '../users/user.repository';
 import { RestaurantRepository } from '../restaurants/restaurant.repository';
+import { RiderRepository } from '../riders/rider.repository';
 import { authenticate, authorize } from '../../shared/middleware/authenticate';
 
 const router = Router();
 const controller = new OrderController(
-  new OrderService(new OrderRepository(), new UserRepository(), new RestaurantRepository()),
+  new OrderService(
+    new OrderRepository(),
+    new UserRepository(),
+    new RestaurantRepository(),
+    new RiderRepository(),
+  ),
 );
 
 // ── Buyer ─────────────────────────────────────────────────────────────────────
