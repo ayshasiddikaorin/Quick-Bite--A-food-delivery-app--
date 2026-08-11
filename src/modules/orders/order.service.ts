@@ -22,9 +22,9 @@ const SELLER_ADVANCE: Partial<Record<OrderStatus, OrderStatus>> = {
   preparing: 'ready',
 };
 
+// Rider can mark "delivery reached" once the food is on the way (rider side only).
 const RIDER_ADVANCE: Partial<Record<OrderStatus, OrderStatus>> = {
-  ready:      'on_the_way',
-  on_the_way: 'delivered',
+  on_the_way: 'reached',
 };
 
 export class OrderService {
@@ -111,6 +111,24 @@ export class OrderService {
     return (await this.repo.updateStatus(orderId, next))!;
   }
 
+  /** Seller confirms the rider picked up the order → delivery is on the way. */
+  async confirmPickup(sellerId: string, orderId: string): Promise<IOrder> {
+    const restaurant = await this.restaurantRepo.findByOwnerId(sellerId);
+    if (!restaurant) throw new AppError('No restaurant found for this seller', 404);
+
+    const order = await this.repo.findById(orderId);
+    if (!order) throw new AppError('Order not found', 404);
+    if (String(order.restaurantId) !== String(restaurant._id)) {
+      throw new AppError('This order does not belong to your restaurant', 403);
+    }
+    if (!order.riderId) throw new AppError('No rider assigned to this order yet', 400);
+    if (order.status !== 'assigned') {
+      throw new AppError('Only assigned orders can be confirmed as picked up', 400);
+    }
+
+    return (await this.repo.updateStatus(orderId, 'on_the_way'))!;
+  }
+
   async getSellerStats(sellerId: string): Promise<SellerStatsDTO> {
     const restaurant = await this.restaurantRepo.findByOwnerId(sellerId);
     // New seller without a registered restaurant yet → return honest zeros,
@@ -169,6 +187,7 @@ export class OrderService {
     return (await this.repo.assignRider(orderId, riderId, rider.name))!;
   }
 
+  /** Rider marks the delivery as reached the customer (on_the_way → reached). */
   async advanceOrderRider(riderId: string, orderId: string): Promise<IOrder> {
     const order = await this.repo.findById(orderId);
     if (!order) throw new AppError('Order not found', 404);
@@ -177,11 +196,25 @@ export class OrderService {
     const next = RIDER_ADVANCE[order.status];
     if (!next) throw new AppError(`Cannot advance order from "${order.status}"`, 400);
 
-    const updated = (await this.repo.updateStatus(orderId, next))!;
+    return (await this.repo.updateStatus(orderId, next))!;
+  }
 
-    // Credit the rider's earnings once a delivery is completed
-    if (next === 'delivered') {
-      await this.creditRiderEarnings(riderId, order.deliveryFee ?? 0);
+  /** Buyer confirms they received the order → delivery cycle complete + rider paid. */
+  async confirmReceived(customerId: string, orderId: string): Promise<IOrder> {
+    const order = await this.repo.findById(orderId);
+    if (!order) throw new AppError('Order not found', 404);
+    if (String(order.customerId) !== customerId) {
+      throw new AppError('Not your order', 403);
+    }
+    if (order.status !== 'reached') {
+      throw new AppError('Order must be "reached" before confirming receipt', 400);
+    }
+
+    const updated = (await this.repo.updateStatus(orderId, 'delivered'))!;
+
+    // Credit the rider's earnings once the delivery is confirmed by the customer.
+    if (order.riderId) {
+      await this.creditRiderEarnings(String(order.riderId), order.deliveryFee ?? 0);
     }
 
     return updated;

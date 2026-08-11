@@ -51,7 +51,9 @@ export class UploadController {
     const filename = `${crypto.randomBytes(16).toString('hex')}.${ext}`;
     fs.writeFileSync(path.join(UPLOAD_DIR, filename), buffer);
 
-    const base = `${req.protocol}://${req.get('host')}`;
-    sendOk(res, { url: `${base}/uploads/${filename}` }, 'Image uploaded');
+    // Store a RELATIVE path, not an absolute host-based URL. The app resolves
+    // relative paths against whatever API host it is currently using, so
+    // uploaded images keep working across emulator / physical device / LAN IP.
+    sendOk(res, { url: `/uploads/${filename}` }, 'Image uploaded');
   };
 }

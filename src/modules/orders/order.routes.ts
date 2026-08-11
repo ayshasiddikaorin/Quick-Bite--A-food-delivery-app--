@@ -26,12 +26,16 @@ router.patch('/:id/cancel', authenticate, controller.cancelOrder);
 router.get('/seller', authenticate, authorize('seller'), controller.getRestaurantOrders);
 router.get('/seller/stats', authenticate, authorize('seller'), controller.getSellerStats);
 router.patch('/seller/:id/advance', authenticate, authorize('seller'), controller.advanceOrderSeller);
+router.patch('/seller/:id/pickup', authenticate, authorize('seller'), controller.confirmPickup);
 
 // ── Rider ─────────────────────────────────────────────────────────────────────
 router.get('/rider/available', authenticate, authorize('rider'), controller.getRiderAvailableOrders);
 router.get('/rider/active', authenticate, authorize('rider'), controller.getRiderActiveOrders);
 router.patch('/rider/:id/accept', authenticate, authorize('rider'), controller.acceptDelivery);
 router.patch('/rider/:id/advance', authenticate, authorize('rider'), controller.advanceOrderRider);
+
+// ── Buyer ─────────────────────────────────────────────────────────────────────
+router.patch('/buyer/:id/received', authenticate, authorize('buyer'), controller.confirmReceived);
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 router.get('/admin/all', authenticate, authorize('admin'), controller.getAllOrders);

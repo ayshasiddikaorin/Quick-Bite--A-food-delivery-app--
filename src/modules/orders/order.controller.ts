@@ -30,6 +30,11 @@ export class OrderController {
     sendOk(res, order, 'Order status updated');
   };
 
+  confirmPickup = async (req: Request, res: Response): Promise<void> => {
+    const order = await this.service.confirmPickup(req.user!.id, req.params.id);
+    sendOk(res, order, 'Rider pickup confirmed');
+  };
+
   cancelOrder = async (req: Request, res: Response): Promise<void> => {
     const order = await this.service.cancelOrder(req.user!.id, req.params.id);
     sendOk(res, order, 'Order cancelled');
@@ -53,6 +58,11 @@ export class OrderController {
   advanceOrderRider = async (req: Request, res: Response): Promise<void> => {
     const order = await this.service.advanceOrderRider(req.user!.id, req.params.id);
     sendOk(res, order, 'Order status updated');
+  };
+
+  confirmReceived = async (req: Request, res: Response): Promise<void> => {
+    const order = await this.service.confirmReceived(req.user!.id, req.params.id);
+    sendOk(res, order, 'Delivery confirmed');
   };
 
   getAllOrders = async (req: Request, res: Response): Promise<void> => {

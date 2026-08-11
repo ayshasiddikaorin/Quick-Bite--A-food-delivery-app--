@@ -73,7 +73,9 @@ export class RiderService {
 
     return {
       newRequests:       readyOrders.length,
-      activeDeliveries:  activeOrders.filter((o) => o.status === 'on_the_way').length,
+      activeDeliveries:  activeOrders.filter((o) =>
+        ['assigned', 'on_the_way', 'reached'].includes(o.status),
+      ).length,
       todayIncome:       rider.todayEarnings,
       weeklyData:        rider.weeklyEarnings,
       isOnline:          rider.isOnline,
