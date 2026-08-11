@@ -14,7 +14,6 @@ import { riderRoutes } from './modules/riders/rider.routes';
 import { adminRoutes } from './modules/admin/admin.routes';
 import { uploadRoutes } from './modules/uploads/upload.routes';
 import { errorHandler } from './shared/middleware/errorHandler';
-import { ApiResponse } from './shared/dto/ApiResponse';
 import mongoose from 'mongoose';
 import { connectDB } from './shared/db/connect';
 
@@ -74,30 +73,8 @@ export function createApp() {
   // Health check
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-  // Root – backend + DB status
-  app.get('/', (req, res) => {
-    const dbStates: Record<number, string> = {
-      0: 'disconnected',
-      1: 'connected',
-      2: 'connecting',
-      3: 'disconnecting',
-    };
-    const dbState = mongoose.connection.readyState;
-    const dbConnected = dbState === 1;
-    const data = {
-      message: dbConnected
-        ? 'Backend is running and MongoDB is connected'
-        : 'Backend is running but MongoDB is not connected',
-      database: mongoose.connection.name || null,
-      dbState: dbStates[dbState] ?? 'unknown',
-      timestamp: new Date().toISOString(),
-    };
-    res.status(dbConnected ? 200 : 503).json(
-      dbConnected
-        ? ApiResponse.ok(data, 'Backend running, MongoDB connected')
-        : ApiResponse.serverError('Backend running but MongoDB connection failed'),
-    );
-  });
+  // Root – minimal response (kept dependency-free to avoid serverless quirks)
+  app.get('/', (_req, res) => res.json({ message: 'Backend is running', health: '/health' }));
 
   // ── Error handler (must be last) ───────────────────────────────────────────
   app.use(errorHandler);
