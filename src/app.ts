@@ -16,9 +16,41 @@ import { uploadRoutes } from './modules/uploads/upload.routes';
 import { errorHandler } from './shared/middleware/errorHandler';
 import { ApiResponse } from './shared/dto/ApiResponse';
 import mongoose from 'mongoose';
+import { connectDB } from './shared/db/connect';
+
+let connecting: Promise<void> | null = null;
+
+/**
+ * Ensure MongoDB is connected before handling a request.
+ * Cached across warm invocations so a warm function never re-connects.
+ */
+export async function ensureDatabase(): Promise<void> {
+  if (mongoose.connection.readyState !== 1) {
+    if (!connecting) {
+      connecting = connectDB().finally(() => {
+        connecting = null;
+      });
+    }
+    await connecting;
+  }
+}
 
 export function createApp() {
   const app = express();
+
+  // ── Database (lazy connection for serverless) ─────────────────────────────
+  app.use(async (_req, res, next) => {
+    try {
+      await ensureDatabase();
+      next();
+    } catch (err) {
+      res.status(503).json({
+        success: false,
+        message: 'Backend running but MongoDB connection failed',
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  });
 
   // ── Security & parsing ─────────────────────────────────────────────────────
   app.use(helmet());
@@ -72,3 +104,6 @@ export function createApp() {
 
   return app;
 }
+
+const app = createApp();
+export default app;
