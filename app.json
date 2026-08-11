@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "QuickBite",
-    "slug": "QuickBite",
+    "slug": "FoodDeliveryApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -23,7 +23,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-status-bar",
+
       [
         "expo-image-picker",
         {
