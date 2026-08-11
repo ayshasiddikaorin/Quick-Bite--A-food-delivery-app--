@@ -14,7 +14,9 @@ export type OrderStatus =
   | 'confirmed'
   | 'preparing'
   | 'ready'
+  | 'assigned'
   | 'on_the_way'
+  | 'reached'
   | 'delivered'
   | 'cancelled';
 

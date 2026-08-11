@@ -37,7 +37,7 @@ export class OrderRepository implements IOrderRepository {
   async assignRider(id: string, riderId: string, riderName: string): Promise<IOrder | null> {
     return Order.findByIdAndUpdate(
       id,
-      { riderId, riderName, status: 'on_the_way' },
+      { riderId, riderName, status: 'assigned' },
       { new: true },
     );
   }

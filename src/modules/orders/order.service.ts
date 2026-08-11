@@ -10,6 +10,7 @@ import { IOrder } from './order.model';
 import { IOrderRepository } from './interfaces';
 import { IUserRepository } from '../users/interfaces';
 import { IRestaurantRepository } from '../restaurants/interfaces';
+import { IRiderRepository } from '../riders/interfaces';
 import { PlaceOrderDTO, SellerStatsDTO } from './dto';
 
 // ── Allowed status transitions ────────────────────────────────────────────────
@@ -21,9 +22,9 @@ const SELLER_ADVANCE: Partial<Record<OrderStatus, OrderStatus>> = {
   preparing: 'ready',
 };
 
+// Rider can mark "delivery reached" once the food is on the way (rider side only).
 const RIDER_ADVANCE: Partial<Record<OrderStatus, OrderStatus>> = {
-  ready:      'on_the_way',
-  on_the_way: 'delivered',
+  on_the_way: 'reached',
 };
 
 export class OrderService {
@@ -31,6 +32,7 @@ export class OrderService {
     private readonly repo:           IOrderRepository,
     private readonly userRepo:       IUserRepository,
     private readonly restaurantRepo: IRestaurantRepository,
+    private readonly riderRepo:      IRiderRepository,
   ) {}
 
   // ── Buyer ──────────────────────────────────────────────────────────────────
@@ -89,7 +91,7 @@ export class OrderService {
 
   async getRestaurantOrders(sellerId: string): Promise<IOrder[]> {
     const restaurant = await this.restaurantRepo.findByOwnerId(sellerId);
-    if (!restaurant) throw new AppError('No restaurant found for this seller', 404);
+    if (!restaurant) return [];
     return this.repo.findByRestaurant(String(restaurant._id));
   }
 
@@ -109,9 +111,31 @@ export class OrderService {
     return (await this.repo.updateStatus(orderId, next))!;
   }
 
-  async getSellerStats(sellerId: string): Promise<SellerStatsDTO> {
+  /** Seller confirms the rider picked up the order → delivery is on the way. */
+  async confirmPickup(sellerId: string, orderId: string): Promise<IOrder> {
     const restaurant = await this.restaurantRepo.findByOwnerId(sellerId);
     if (!restaurant) throw new AppError('No restaurant found for this seller', 404);
+
+    const order = await this.repo.findById(orderId);
+    if (!order) throw new AppError('Order not found', 404);
+    if (String(order.restaurantId) !== String(restaurant._id)) {
+      throw new AppError('This order does not belong to your restaurant', 403);
+    }
+    if (!order.riderId) throw new AppError('No rider assigned to this order yet', 400);
+    if (order.status !== 'assigned') {
+      throw new AppError('Only assigned orders can be confirmed as picked up', 400);
+    }
+
+    return (await this.repo.updateStatus(orderId, 'on_the_way'))!;
+  }
+
+  async getSellerStats(sellerId: string): Promise<SellerStatsDTO> {
+    const restaurant = await this.restaurantRepo.findByOwnerId(sellerId);
+    // New seller without a registered restaurant yet → return honest zeros,
+    // never a 404 that forces the app into dummy-data fallback.
+    if (!restaurant) {
+      return { newOrders: 0, preparing: 0, completed: 0, totalSales: 0, weeklyData: [0, 0, 0, 0, 0, 0, 0] };
+    }
 
     const restaurantId = String(restaurant._id);
 
@@ -163,6 +187,7 @@ export class OrderService {
     return (await this.repo.assignRider(orderId, riderId, rider.name))!;
   }
 
+  /** Rider marks the delivery as reached the customer (on_the_way → reached). */
   async advanceOrderRider(riderId: string, orderId: string): Promise<IOrder> {
     const order = await this.repo.findById(orderId);
     if (!order) throw new AppError('Order not found', 404);
@@ -172,6 +197,47 @@ export class OrderService {
     if (!next) throw new AppError(`Cannot advance order from "${order.status}"`, 400);
 
     return (await this.repo.updateStatus(orderId, next))!;
+  }
+
+  /** Buyer confirms they received the order → delivery cycle complete + rider paid. */
+  async confirmReceived(customerId: string, orderId: string): Promise<IOrder> {
+    const order = await this.repo.findById(orderId);
+    if (!order) throw new AppError('Order not found', 404);
+    if (String(order.customerId) !== customerId) {
+      throw new AppError('Not your order', 403);
+    }
+    if (order.status !== 'reached') {
+      throw new AppError('Order must be "reached" before confirming receipt', 400);
+    }
+
+    const updated = (await this.repo.updateStatus(orderId, 'delivered'))!;
+
+    // Credit the rider's earnings once the delivery is confirmed by the customer.
+    if (order.riderId) {
+      await this.creditRiderEarnings(String(order.riderId), order.deliveryFee ?? 0);
+    }
+
+    return updated;
+  }
+
+  /** Increment a rider's delivery + earnings counters when an order is delivered. */
+  private async creditRiderEarnings(riderId: string, amount: number): Promise<void> {
+    const rider = await this.riderRepo.findByUserId(riderId);
+    if (!rider) return; // rider has no profile yet — nothing to credit
+
+    const weekly =
+      Array.isArray(rider.weeklyEarnings) && rider.weeklyEarnings.length === 7
+        ? [...rider.weeklyEarnings]
+        : [0, 0, 0, 0, 0, 0, 0];
+    const mondayIndex = (new Date().getDay() + 6) % 7; // 0 = Monday
+    weekly[mondayIndex] = (weekly[mondayIndex] ?? 0) + amount;
+
+    await this.riderRepo.update(String(rider._id), {
+      totalDeliveries: (rider.totalDeliveries ?? 0) + 1,
+      totalEarnings:   (rider.totalEarnings ?? 0) + amount,
+      todayEarnings:   (rider.todayEarnings ?? 0) + amount,
+      weeklyEarnings:  weekly,
+    });
   }
 
   // ── Admin ──────────────────────────────────────────────────────────────────
