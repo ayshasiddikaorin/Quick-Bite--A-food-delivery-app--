@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,164 +6,125 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Colors from '../../../constants/colors';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
+import { useApiData } from '../../../hooks/useApiData';
+import { useNotifications } from '../../../context/NotificationContext';
+import { fetchRiderAvailableOrders, acceptDelivery } from '../../../services/orderService';
+import type { Order } from '../../../models/order';
 import type { RiderStackParamList } from '../../../navigation/RiderNavigator';
 
 type NavProp = NativeStackNavigationProp<RiderStackParamList>;
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-export interface DeliveryRequest {
-  id: string;
-  orderId: string;
-  restaurant: string;
-  restaurantAddress: string;
-  customer: string;
-  customerAddress: string;
-  items: string;
-  distance: string;
-  eta: string;
-  payout: string;
-  receivedAt: string;
+const EMPTY_ORDERS: Order[] = [];
+
+function timeAgo(iso: string): string {
+  const minutes = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  return `${Math.floor(minutes / 60)}h ago`;
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-const MOCK_REQUESTS: DeliveryRequest[] = [
-  {
-    id: 'req_001',
-    orderId: '#1048',
-    restaurant: 'Spice Garden',
-    restaurantAddress: 'Road 12, Dhanmondi, Dhaka',
-    customer: 'Aysha S.',
-    customerAddress: 'House 5, Road 7, Mirpur-2, Dhaka',
-    items: '2x Chicken Biryani, 1x Lassi',
-    distance: '2.4 km',
-    eta: '12 min',
-    payout: '৳75',
-    receivedAt: '2 min ago',
-  },
-  {
-    id: 'req_002',
-    orderId: '#1049',
-    restaurant: 'Pizza Hub',
-    restaurantAddress: 'Road 4, Gulshan-1, Dhaka',
-    customer: 'Rafi M.',
-    customerAddress: 'House 12, Road 3, Banani, Dhaka',
-    items: '1x Pepperoni Pizza, 1x Garlic Bread',
-    distance: '3.1 km',
-    eta: '18 min',
-    payout: '৳90',
-    receivedAt: '5 min ago',
-  },
-  {
-    id: 'req_003',
-    orderId: '#1050',
-    restaurant: 'Burger King BD',
-    restaurantAddress: 'Jamuna Future Park, Bashundhara, Dhaka',
-    customer: 'Noor J.',
-    customerAddress: 'House 8, Road 15, Uttara Sector-7, Dhaka',
-    items: '3x Whopper, 2x Fries, 3x Drinks',
-    distance: '4.8 km',
-    eta: '25 min',
-    payout: '৳130',
-    receivedAt: '8 min ago',
-  },
-];
+/** Format the delivery payout shown to the rider (deliveryFee is the rider's share). */
+function payoutFor(order: Order): string {
+  return `৳${(order.deliveryFee ?? 0).toFixed(0)}`;
+}
+
+function orderLabel(order: Order): string {
+  return `#${order.id.slice(-6).toUpperCase()}`;
+}
 
 // ─── Request Card component ───────────────────────────────────────────────────
 interface RequestCardProps {
-  item: DeliveryRequest;
-  onAccept: (item: DeliveryRequest) => void;
-  onDecline: (item: DeliveryRequest) => void;
+  item: Order;
+  onAccept: (item: Order) => void;
+  onDecline: (item: Order) => void;
 }
 
-const RequestCard: React.FC<RequestCardProps> = ({ item, onAccept, onDecline }) => (
-  <View style={cardStyles.card}>
-    {/* Top row */}
-    <View style={cardStyles.topRow}>
-      <View style={cardStyles.orderIdBadge}>
-        <Text style={cardStyles.orderId}>{item.orderId}</Text>
-      </View>
-      <View style={cardStyles.rightBadges}>
-        <View style={cardStyles.distanceBadge}>
-          <Ionicons name="navigate-outline" size={12} color={Colors.riderAccent} />
-          <Text style={cardStyles.distanceText}>{item.distance}</Text>
-        </View>
-        <View style={cardStyles.payoutBadge}>
-          <Ionicons name="cash-outline" size={12} color={Colors.success} />
-          <Text style={cardStyles.payoutText}>{item.payout}</Text>
-        </View>
-      </View>
-    </View>
+const RequestCard: React.FC<RequestCardProps> = ({ item, onAccept, onDecline }) => {
+  const itemsText = item.items.map((i) => `${i.quantity}x ${i.name}`).join(', ');
 
-    {/* Route */}
-    <View style={cardStyles.routeBox}>
-      <View style={cardStyles.routeRow}>
-        <View style={[cardStyles.routeDot, { backgroundColor: Colors.warning }]} />
-        <View style={cardStyles.routeTextBlock}>
-          <Text style={cardStyles.routeRole}>Pickup</Text>
-          <Text style={cardStyles.routeMain}>{item.restaurant}</Text>
-          <Text style={cardStyles.routeSub} numberOfLines={1}>{item.restaurantAddress}</Text>
+  return (
+    <View style={cardStyles.card}>
+      {/* Top row */}
+      <View style={cardStyles.topRow}>
+        <View style={cardStyles.orderIdBadge}>
+          <Text style={cardStyles.orderId}>{orderLabel(item)}</Text>
+        </View>
+        <View style={cardStyles.rightBadges}>
+          <View style={cardStyles.payoutBadge}>
+            <Ionicons name="cash-outline" size={12} color={Colors.success} />
+            <Text style={cardStyles.payoutText}>{payoutFor(item)}</Text>
+          </View>
         </View>
       </View>
 
-      <View style={cardStyles.routeConnector}>
-        <View style={cardStyles.connectorLine} />
-        <Ionicons name="arrow-down" size={12} color={Colors.gray} />
-      </View>
+      {/* Route */}
+      <View style={cardStyles.routeBox}>
+        <View style={cardStyles.routeRow}>
+          <View style={[cardStyles.routeDot, { backgroundColor: Colors.warning }]} />
+          <View style={cardStyles.routeTextBlock}>
+            <Text style={cardStyles.routeRole}>Pickup</Text>
+            <Text style={cardStyles.routeMain}>{item.restaurantName}</Text>
+          </View>
+        </View>
 
-      <View style={cardStyles.routeRow}>
-        <View style={[cardStyles.routeDot, { backgroundColor: Colors.riderAccent }]} />
-        <View style={cardStyles.routeTextBlock}>
-          <Text style={cardStyles.routeRole}>Dropoff</Text>
-          <Text style={cardStyles.routeMain}>{item.customer}</Text>
-          <Text style={cardStyles.routeSub} numberOfLines={1}>{item.customerAddress}</Text>
+        <View style={cardStyles.routeConnector}>
+          <View style={cardStyles.connectorLine} />
+          <Ionicons name="arrow-down" size={12} color={Colors.gray} />
+        </View>
+
+        <View style={cardStyles.routeRow}>
+          <View style={[cardStyles.routeDot, { backgroundColor: Colors.riderAccent }]} />
+          <View style={cardStyles.routeTextBlock}>
+            <Text style={cardStyles.routeRole}>Dropoff</Text>
+            <Text style={cardStyles.routeMain}>{item.customerName}</Text>
+            <Text style={cardStyles.routeSub} numberOfLines={2}>{item.address}</Text>
+          </View>
         </View>
       </View>
-    </View>
 
-    {/* Items + ETA */}
-    <View style={cardStyles.metaRow}>
-      <View style={cardStyles.metaItem}>
-        <Ionicons name="fast-food-outline" size={13} color={Colors.gray} />
-        <Text style={cardStyles.metaText} numberOfLines={1}>{item.items}</Text>
+      {/* Items */}
+      <View style={cardStyles.metaRow}>
+        <View style={cardStyles.metaItem}>
+          <Ionicons name="fast-food-outline" size={13} color={Colors.gray} />
+          <Text style={cardStyles.metaText} numberOfLines={2}>{itemsText}</Text>
+        </View>
       </View>
-      <View style={cardStyles.metaItem}>
-        <Ionicons name="time-outline" size={13} color={Colors.gray} />
-        <Text style={cardStyles.metaText}>ETA {item.eta}</Text>
+
+      {/* Action buttons */}
+      <View style={cardStyles.btnRow}>
+        <TouchableOpacity
+          style={cardStyles.declineBtn}
+          onPress={() => onDecline(item)}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="close" size={16} color={Colors.error} />
+          <Text style={cardStyles.declineBtnText}>Decline</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={cardStyles.acceptBtn}
+          onPress={() => onAccept(item)}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="checkmark" size={16} color={Colors.white} />
+          <Text style={cardStyles.acceptBtnText}>Accept</Text>
+        </TouchableOpacity>
       </View>
+
+      <Text style={cardStyles.receivedAt}>Received {timeAgo(item.createdAt)}</Text>
     </View>
-
-    {/* Action buttons */}
-    <View style={cardStyles.btnRow}>
-      <TouchableOpacity
-        style={cardStyles.declineBtn}
-        onPress={() => onDecline(item)}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="close" size={16} color={Colors.error} />
-        <Text style={cardStyles.declineBtnText}>Decline</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={cardStyles.acceptBtn}
-        onPress={() => onAccept(item)}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="checkmark" size={16} color={Colors.white} />
-        <Text style={cardStyles.acceptBtnText}>Accept</Text>
-      </TouchableOpacity>
-    </View>
-
-    <Text style={cardStyles.receivedAt}>Received {item.receivedAt}</Text>
-  </View>
-);
+  );
+};
 
 const cardStyles = StyleSheet.create({
   card: {
@@ -193,16 +154,6 @@ const cardStyles = StyleSheet.create({
   },
   orderId: { fontSize: 13, fontWeight: '800', color: Colors.black },
   rightBadges: { flexDirection: 'row', gap: 8 },
-  distanceBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.infoLight,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  distanceText: { fontSize: 11, fontWeight: '700', color: Colors.riderAccent },
   payoutBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -219,12 +170,12 @@ const cardStyles = StyleSheet.create({
   routeTextBlock: { flex: 1, gap: 1 },
   routeRole: { fontSize: 10, color: Colors.gray, fontWeight: '600', textTransform: 'uppercase' },
   routeMain: { fontSize: 14, fontWeight: '700', color: Colors.black },
-  routeSub: { fontSize: 11, color: Colors.gray },
+  routeSub: { fontSize: 11, color: Colors.gray, marginTop: 2 },
   routeConnector: { flexDirection: 'row', alignItems: 'center', marginLeft: 4, paddingVertical: 4, gap: 2 },
   connectorLine: { width: 1, height: 10, backgroundColor: Colors.border, marginLeft: 4 },
   metaRow: { gap: 6, marginBottom: 14 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  metaText: { fontSize: 12, color: Colors.gray, flex: 1 },
+  metaText: { fontSize: 12, color: Colors.gray, flex: 1, lineHeight: 17 },
   btnRow: { flexDirection: 'row', gap: 10 },
   declineBtn: {
     flex: 1,
@@ -260,15 +211,47 @@ const cardStyles = StyleSheet.create({
 // ─── Screen ───────────────────────────────────────────────────────────────────
 const RiderRequestsScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
-  const [requests, setRequests] = useState<DeliveryRequest[]>(MOCK_REQUESTS);
-  const [pendingAccept, setPendingAccept] = useState<DeliveryRequest | null>(null);
-  const [pendingDecline, setPendingDecline] = useState<DeliveryRequest | null>(null);
+  const { showPopup } = useNotifications();
 
-  const handleAcceptConfirm = () => {
+  const { status, data, reload } = useApiData<Order[]>(fetchRiderAvailableOrders, EMPTY_ORDERS);
+  const [requests, setRequests] = useState<Order[]>(EMPTY_ORDERS);
+  const [pendingAccept, setPendingAccept] = useState<Order | null>(null);
+  const [pendingDecline, setPendingDecline] = useState<Order | null>(null);
+  const [accepting, setAccepting] = useState(false);
+
+  useEffect(() => {
+    if (status !== 'loading') setRequests(data);
+  }, [status, data]);
+
+  useFocusEffect(
+    useCallback(() => { reload(); }, [reload]),
+  );
+
+  // Poll for new delivery jobs while the screen is mounted.
+  useEffect(() => {
+    const interval = setInterval(() => { reload(); }, 8000);
+    return () => clearInterval(interval);
+  }, [reload]);
+
+  const handleAcceptConfirm = async () => {
     if (!pendingAccept) return;
-    navigation.navigate('RiderAcceptedDelivery', { request: pendingAccept });
-    setRequests((prev) => prev.filter((r) => r.id !== pendingAccept.id));
-    setPendingAccept(null);
+    setAccepting(true);
+    try {
+      const order = await acceptDelivery(pendingAccept.id);
+      setRequests((prev) => prev.filter((r) => r.id !== pendingAccept.id));
+      setPendingAccept(null);
+      navigation.navigate('RiderAcceptedDelivery', { order });
+    } catch (err: unknown) {
+      setPendingAccept(null);
+      showPopup({
+        title: 'Accept Failed',
+        message: `${err instanceof Error ? err.message : 'Something went wrong'}. The job may have been taken by another rider.`,
+        variant: 'error',
+      });
+      reload();
+    } finally {
+      setAccepting(false);
+    }
   };
 
   const handleDeclineConfirm = () => {
@@ -276,6 +259,12 @@ const RiderRequestsScreen: React.FC = () => {
     setRequests((prev) => prev.filter((r) => r.id !== pendingDecline.id));
     setPendingDecline(null);
   };
+
+  const liveCount = requests.length;
+
+  if (status === 'loading' && requests.length === 0) {
+    return <LoadingScreen label="Loading delivery requests…" color={Colors.riderAccent} />;
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -294,16 +283,25 @@ const RiderRequestsScreen: React.FC = () => {
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={styles.refreshBtn}
-            onPress={() => setRequests(MOCK_REQUESTS)}
+            onPress={reload}
             activeOpacity={0.8}
           >
-            <Ionicons name="refresh-outline" size={18} color={Colors.black} />
+            {status === 'loading'
+              ? <ActivityIndicator size="small" color={Colors.riderAccent} />
+              : <Ionicons name="refresh-outline" size={18} color={Colors.black} />}
           </TouchableOpacity>
           <View style={styles.countBadge}>
-            <Text style={styles.countText}>{requests.length}</Text>
+            <Text style={styles.countText}>{liveCount}</Text>
           </View>
         </View>
       </View>
+
+      {status === 'fallback' && (
+        <View style={styles.fallbackBanner}>
+          <Ionicons name="cloud-offline-outline" size={13} color={Colors.warning} />
+          <Text style={styles.fallbackText}>Backend offline — no live delivery jobs</Text>
+        </View>
+      )}
 
       {requests.length === 0 ? (
         <View style={styles.emptyState}>
@@ -323,7 +321,7 @@ const RiderRequestsScreen: React.FC = () => {
             <View style={styles.listHeader}>
               <Ionicons name="radio-outline" size={14} color={Colors.riderAccent} />
               <Text style={styles.listHeaderText}>
-                {requests.length} pending request{requests.length > 1 ? 's' : ''} near you
+                {requests.length} pending request{requests.length > 1 ? 's' : ''} ready for pickup
               </Text>
             </View>
           }
@@ -341,8 +339,8 @@ const RiderRequestsScreen: React.FC = () => {
       <ConfirmModal
         visible={!!pendingAccept}
         title="Accept Request?"
-        message={`You'll be assigned to Order ${pendingAccept?.orderId} from ${pendingAccept?.restaurant}.\n\nPayout: ${pendingAccept?.payout}  ·  Distance: ${pendingAccept?.distance}`}
-        confirmText="Yes, Accept"
+        message={`You'll be assigned to Order ${pendingAccept ? orderLabel(pendingAccept) : ''} from ${pendingAccept?.restaurantName}.\n\nPayout: ${pendingAccept ? payoutFor(pendingAccept) : ''}`}
+        confirmText={accepting ? 'Accepting…' : 'Yes, Accept'}
         cancelText="Cancel"
         variant="info"
         onConfirm={handleAcceptConfirm}
@@ -353,7 +351,7 @@ const RiderRequestsScreen: React.FC = () => {
       <ConfirmModal
         visible={!!pendingDecline}
         title="Decline Request?"
-        message={`Are you sure you want to decline Order ${pendingDecline?.orderId}? This cannot be undone.`}
+        message={`Are you sure you want to decline this delivery request?`}
         confirmText="Yes, Decline"
         cancelText="Cancel"
         variant="danger"
@@ -402,6 +400,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   countText: { color: Colors.white, fontSize: 13, fontWeight: '800' },
+  fallbackBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#FFF8E1', paddingHorizontal: 16, paddingVertical: 8,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  fallbackText: { fontSize: 11, color: Colors.warning, fontWeight: '600', flex: 1 },
   list: { padding: 20, paddingBottom: 30 },
   listHeader: {
     flexDirection: 'row',

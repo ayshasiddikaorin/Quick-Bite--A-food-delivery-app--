@@ -20,6 +20,7 @@ import Colors from '../../../constants/colors';
 import { restaurants as dummyRestaurants } from '../../../data/dummyData';
 import { RestaurantMenuItem, CartItem, RestaurantData } from '../../../models';
 import { getCart, saveCart } from '../../../storage/cartStorage';
+import { isFavorite, toggleFavorite } from '../../../storage/favoritesStorage';
 import { fetchRestaurantById } from '../../../services/restaurantService';
 import { fetchMenuByRestaurant } from '../../../services/menuService';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
@@ -181,6 +182,21 @@ const RestaurantScreen: React.FC = () => {
     return () => { cancelled = true; clearTimeout(timeout); };
   }, [restaurantId]);
 
+  // Read persisted favorite state for this restaurant
+  useEffect(() => {
+    let cancelled = false;
+    isFavorite(restaurantId).then((fav) => {
+      if (!cancelled) setIsFav(fav);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [restaurantId]);
+
+  const handleToggleFav = async () => {
+    if (!restaurant) return;
+    const updated = await toggleFavorite(restaurant);
+    setIsFav(updated.some((r) => r.id === restaurant.id));
+  };
+
   const headerOpacity = scrollY.interpolate({
     inputRange: [HEADER_THRESHOLD - 40, HEADER_THRESHOLD],
     outputRange: [0, 1],
@@ -274,7 +290,7 @@ const RestaurantScreen: React.FC = () => {
         <TouchableOpacity style={styles.circleBtn} onPress={() => navigation.goBack()} activeOpacity={0.85}>
           <Ionicons name="arrow-back" size={20} color={Colors.black} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.circleBtn} onPress={() => setIsFav((v) => !v)} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.circleBtn} onPress={handleToggleFav} activeOpacity={0.85}>
           <Ionicons name={isFav ? 'heart' : 'heart-outline'} size={20} color={isFav ? Colors.badge : Colors.black} />
         </TouchableOpacity>
       </SafeAreaView>

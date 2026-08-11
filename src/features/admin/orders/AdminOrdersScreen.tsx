@@ -6,13 +6,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import Colors from '../../../constants/colors';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
 import { useApiData } from '../../../hooks/useApiData';
 import { adminFetchAllOrders } from '../../../services/orderService';
 import type { Order, OrderStatus } from '../../../models';
@@ -56,7 +56,9 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; color: string; bg: str
   confirmed: { label: 'Confirmed', color: Colors.riderAccent, bg: Colors.infoLight },
   preparing: { label: 'Preparing', color: Colors.riderAccent, bg: Colors.infoLight },
   ready: { label: 'Ready', color: Colors.sellerAccent, bg: Colors.successLight },
+  assigned: { label: 'Assigned', color: Colors.warning, bg: '#FFF8E1' },
   on_the_way: { label: 'On the Way', color: '#9C27B0', bg: '#F3E5F5' },
+  reached: { label: 'Reached', color: Colors.primary, bg: Colors.infoLight },
   delivered: { label: 'Delivered', color: Colors.sellerAccent, bg: Colors.successLight },
   cancelled: { label: 'Cancelled', color: Colors.error, bg: Colors.errorLight },
 };
@@ -67,7 +69,7 @@ const filterMatchesStatus = (filter: FilterType, status: OrderStatus): boolean =
   if (filter === 'All') return true;
   if (filter === 'Pending') return status === 'pending';
   if (filter === 'Preparing') return status === 'preparing' || status === 'confirmed';
-  if (filter === 'On the Way') return status === 'on_the_way' || status === 'ready';
+  if (filter === 'On the Way') return status === 'assigned' || status === 'on_the_way' || status === 'ready' || status === 'reached';
   if (filter === 'Delivered') return status === 'delivered';
   if (filter === 'Cancelled') return status === 'cancelled';
   return true;
@@ -94,6 +96,10 @@ const AdminOrdersScreen: React.FC = () => {
   );
 
   const filteredOrders = orders.filter((o) => filterMatchesStatus(activeFilter, o.status));
+
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading all orders…" color={Colors.adminAccent} />;
+  }
 
   const renderOrder = ({ item }: { item: Order }) => {
     const statusCfg = STATUS_CONFIG[item.status];
@@ -143,9 +149,7 @@ const AdminOrdersScreen: React.FC = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>All Orders</Text>
         <TouchableOpacity style={styles.backBtn} onPress={reload} activeOpacity={0.8}>
-          {status === 'loading'
-            ? <ActivityIndicator size="small" color={Colors.primary} />
-            : <Ionicons name="refresh-outline" size={20} color={Colors.black} />}
+          <Ionicons name="refresh-outline" size={20} color={Colors.black} />
         </TouchableOpacity>
       </View>
 

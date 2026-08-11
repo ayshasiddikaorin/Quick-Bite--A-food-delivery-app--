@@ -33,6 +33,8 @@ import {
 } from '../../../data/dummyData';
 import Colors from '../../../constants/colors';
 import { useAuth } from '../../../context/AuthContext';
+import { useNotifications } from '../../../context/NotificationContext';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
 import { useApiData } from '../../../hooks/useApiData';
 import { fetchActiveOffers } from '../../../services/offerService';
 import { fetchRestaurantsWithMenus } from '../../../services/restaurantService';
@@ -90,6 +92,7 @@ function toRecommended(items: FoodItem[]): RecommendedItem[] {
 
 const BuyerHomeScreen: React.FC = () => {
   const { user } = useAuth();
+  const { unreadCount } = useNotifications();
   const navigation = useNavigation<NativeStackNavigationProp<BuyerStackParamList>>();
   const [activeCategory, setActiveCategory] = useState('All');
   const [refreshing, setRefreshing] = useState(false);
@@ -129,6 +132,10 @@ const BuyerHomeScreen: React.FC = () => {
   const openRestaurant = (restaurantId: string) =>
     navigation.navigate('RestaurantPage', { restaurantId });
 
+  if (isLoading) {
+    return <LoadingScreen label="Loading fresh dishes…" color={Colors.primary} />;
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
@@ -156,11 +163,13 @@ const BuyerHomeScreen: React.FC = () => {
             <TouchableOpacity style={styles.refreshBtn} onPress={onRefresh} activeOpacity={0.8}>
               <Ionicons name="refresh-outline" size={20} color={Colors.black} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.notifBtn}>
+            <TouchableOpacity style={styles.notifBtn} activeOpacity={0.8}>
               <Ionicons name="notifications-outline" size={22} color={Colors.black} />
-              <View style={styles.notifBadge}>
-                <Text style={styles.notifBadgeText}>3</Text>
-              </View>
+              {unreadCount > 0 && (
+                <View style={styles.notifBadge}>
+                  <Text style={styles.notifBadgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
         </View>

@@ -6,15 +6,16 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import Colors from '../../../constants/colors';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
 import { useApiData } from '../../../hooks/useApiData';
+import { useNotifications } from '../../../context/NotificationContext';
+import ConfirmModal from '../../../components/shared/ConfirmModal';
 import {
   adminFetchAllRestaurants,
   adminApproveRestaurant,
@@ -31,11 +32,17 @@ const DUMMY_RESTAURANTS: Restaurant[] = [
 
 const AdminRestaurantsScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { showPopup } = useNotifications();
+  const [confirmRestaurant, setConfirmRestaurant] = useState<{ id: string; name: string } | null>(null);
 
   const rsState = useApiData(adminFetchAllRestaurants, DUMMY_RESTAURANTS);
   const restaurants = rsState.status !== 'loading' ? rsState.data : DUMMY_RESTAURANTS;
   const status = rsState.status;
   const reload = rsState.reload;
+
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading restaurants…" color={Colors.adminAccent} />;
+  }
 
   // Refresh whenever the screen regains focus (e.g. after seller registers a restaurant)
   useFocusEffect(
@@ -43,28 +50,24 @@ const AdminRestaurantsScreen: React.FC = () => {
   );
 
   const handleApprove = (id: string, name: string) => {
-    Alert.alert(
-      'Approve Restaurant',
-      `Are you sure you want to approve "${name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Approve',
-          onPress: async () => {
-            try {
-              await adminApproveRestaurant(id);
-              reload();
-            } catch {
-              Alert.alert('Offline', 'Dummy data mode — could not reach backend to approve.');
-            }
-          },
-        },
-      ]
-    );
+    setConfirmRestaurant({ id, name });
+  };
+
+  const doApprove = async () => {
+    if (!confirmRestaurant) return;
+    try {
+      await adminApproveRestaurant(confirmRestaurant.id);
+      reload();
+      showPopup({ title: 'Restaurant Approved ✅', message: `"${confirmRestaurant.name}" is now live.`, variant: 'success', autoDismissMs: 2500 });
+    } catch {
+      showPopup({ title: 'Offline', message: 'Could not reach backend — changes were not saved.', variant: 'warning' });
+    } finally {
+      setConfirmRestaurant(null);
+    }
   };
 
   const handleView = (name: string) => {
-    Alert.alert(name, 'Restaurant details would open here.', [{ text: 'OK' }]);
+    showPopup({ title: name, message: 'Full restaurant details will open here in a future update.', variant: 'info', autoDismissMs: 3000 });
   };
 
   const renderRestaurant = ({ item }: { item: Restaurant }) => (
@@ -156,9 +159,7 @@ const AdminRestaurantsScreen: React.FC = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Restaurants</Text>
         <TouchableOpacity style={styles.backBtn} onPress={reload} activeOpacity={0.8}>
-          {status === 'loading'
-            ? <ActivityIndicator size="small" color={Colors.primary} />
-            : <Ionicons name="refresh-outline" size={20} color={Colors.black} />}
+          <Ionicons name="refresh-outline" size={20} color={Colors.black} />
         </TouchableOpacity>
       </View>
 
@@ -197,6 +198,16 @@ const AdminRestaurantsScreen: React.FC = () => {
         renderItem={renderRestaurant}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+      />
+      <ConfirmModal
+        visible={!!confirmRestaurant}
+        title="Approve Restaurant"
+        message={`Approve "${confirmRestaurant?.name}" so customers can see and order from it?`}
+        confirmText="Approve"
+        cancelText="Cancel"
+        variant="info"
+        onConfirm={doApprove}
+        onCancel={() => setConfirmRestaurant(null)}
       />
     </SafeAreaView>
   );

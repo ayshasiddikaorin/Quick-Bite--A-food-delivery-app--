@@ -8,7 +8,6 @@ import {
   StatusBar,
   ActivityIndicator,
   Image,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Colors from '../../../constants/colors';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
+import { useNotifications } from '../../../context/NotificationContext';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
 import { clearCart, getCart } from '../../../storage/cartStorage';
 import { placeOrder } from '../../../services/orderService';
@@ -83,6 +83,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 const PaymentScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteProps>();
+  const { showPopup } = useNotifications();
 
   const { subtotal, discount, tax, deliveryFee, total, address, deliveryType } =
     route.params;
@@ -102,7 +103,11 @@ const PaymentScreen: React.FC = () => {
     try {
       const cart = await getCart();
       if (cart.length === 0) {
-        Alert.alert('Cart is empty', 'Add items to your cart before placing an order.');
+        showPopup({
+          title: 'Cart is Empty',
+          message: 'Please add items to your cart before placing an order.',
+          variant: 'warning',
+        });
         setPlacing(false);
         return;
       }
@@ -141,6 +146,13 @@ const PaymentScreen: React.FC = () => {
       await clearCart();
       setPlacing(false);
 
+      showPopup({
+        title: 'Order Placed! 🎉',
+        message: `Your order from ${restaurantName} has been sent to the restaurant.`,
+        variant: 'success',
+        autoDismissMs: 3000,
+      });
+
       navigation.reset({
         index: 0,
         routes: [
@@ -162,10 +174,12 @@ const PaymentScreen: React.FC = () => {
       // Backend unreachable — simulate the order locally (dummy data mode).
       await clearCart();
       setPlacing(false);
-      Alert.alert(
-        'Dummy data mode',
-        'Backend is offline, so the order was simulated locally and will NOT reach the restaurant. Reconnect to place a real order.',
-      );
+      showPopup({
+        title: 'Demo / Offline Mode',
+        message: 'Backend is unreachable, so the order was simulated locally.',
+        variant: 'info',
+        autoDismissMs: 3000,
+      });
       navigation.reset({
         index: 0,
         routes: [

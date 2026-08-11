@@ -17,6 +17,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Colors from '../../../constants/colors';
 import { useAuth } from '../../../context/AuthContext';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
 import { useApiData } from '../../../hooks/useApiData';
 import { fetchSellerStats } from '../../../services/orderService';
 import { fetchMyRestaurant, toggleRestaurantOpen } from '../../../services/restaurantService';
@@ -117,6 +118,10 @@ const SellerDashboardScreen: React.FC = () => {
 
   const isOpen = restaurant?.isOpen ?? true;
 
+  if (status === 'loading' && !restaurant) {
+    return <LoadingScreen label="Loading your dashboard…" color={Colors.sellerAccent} />;
+  }
+
   const toggleOpen = async () => {
     setTogglingOpen(true);
     try {
@@ -215,7 +220,7 @@ const SellerDashboardScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
           {[
-            { label: 'Manage Orders', icon: 'list-outline' as const, screen: 'SellerOrders' as const },
+            { label: 'Manage Orders', icon: 'list-outline' as const, screen: 'SellerOrders' as const, badge: stats.newOrders },
             { label: 'Add Food', icon: 'add-circle-outline' as const, screen: 'SellerAddFood' as const },
             { label: 'Menu', icon: 'restaurant-outline' as const, screen: 'SellerMenu' as const },
             { label: 'Sales Report', icon: 'bar-chart-outline' as const, screen: 'SellerSales' as const },
@@ -230,6 +235,11 @@ const SellerDashboardScreen: React.FC = () => {
                 <Ionicons name={action.icon} size={24} color={Colors.sellerAccent} />
               </View>
               <Text style={styles.actionLabel}>{action.label}</Text>
+              {action.badge !== undefined && action.badge > 0 && (
+                <View style={styles.actionBadge}>
+                  <Text style={styles.actionBadgeText}>{action.badge}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           ))}
         </View>
@@ -366,7 +376,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 10,
     elevation: 3,
+    position: 'relative',
   },
+  actionBadge: {
+    position: 'absolute', top: 8, right: 8,
+    minWidth: 20, height: 20, borderRadius: 10,
+    backgroundColor: Colors.sellerAccent, alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  actionBadgeText: { color: Colors.white, fontSize: 11, fontWeight: '800' },
   actionIcon: {
     width: 52,
     height: 52,

@@ -50,6 +50,11 @@ export function advanceOrderSeller(id: string): Promise<Order> {
   return apiRequest<Order>(`/orders/seller/${id}/advance`, { method: 'PATCH' }, true);
 }
 
+/** Seller confirms the rider picked up the order (assigned → on_the_way). */
+export function confirmRiderPickup(id: string): Promise<Order> {
+  return apiRequest<Order>(`/orders/seller/${id}/pickup`, { method: 'PATCH' }, true);
+}
+
 // ── Rider ──────────────────────────────────────────────────────────────────────
 
 /** Get all orders with status "ready" — available for pickup. */
@@ -62,14 +67,19 @@ export function fetchRiderActiveOrders(): Promise<Order[]> {
   return apiRequest<Order[]>('/orders/rider/active', {}, true);
 }
 
-/** Accept a ready order for delivery (status: ready → on_the_way). */
+/** Accept a ready order for delivery (status: ready → assigned). */
 export function acceptDelivery(id: string): Promise<Order> {
   return apiRequest<Order>(`/orders/rider/${id}/accept`, { method: 'PATCH' }, true);
 }
 
-/** Advance delivery to next rider status (on_the_way → delivered). */
+/** Advance delivery to next rider status (on_the_way → reached). */
 export function advanceOrderRider(id: string): Promise<Order> {
   return apiRequest<Order>(`/orders/rider/${id}/advance`, { method: 'PATCH' }, true);
+}
+
+/** Buyer confirms they received the delivery (reached → delivered). */
+export function confirmOrderReceived(id: string): Promise<Order> {
+  return apiRequest<Order>(`/orders/buyer/${id}/received`, { method: 'PATCH' }, true);
 }
 
 // ── Admin ──────────────────────────────────────────────────────────────────────

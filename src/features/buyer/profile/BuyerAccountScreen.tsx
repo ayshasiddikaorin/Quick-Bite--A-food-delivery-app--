@@ -16,23 +16,70 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import ProfileCard from './ProfileCard';
 import PromoBanner from '../../../components/PromoBanner';
 import WalletCard from '../../../components/WalletCard';
-import QuickActionCard from '../../../components/QuickActionCard';
 import MenuItem from '../../../components/MenuItem';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
 
 import { menuGroups } from '../../../data/accountData';
 import Colors from '../../../constants/colors';
 import { useAuth } from '../../../context/AuthContext';
-import type { UserProfile } from '../../../models';
+import { useApiData } from '../../../hooks/useApiData';
+import { fetchMyOrders } from '../../../services/orderService';
+import type { UserProfile, Order, OrderStatus } from '../../../models';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
+
+const ACTIVE_STATUSES: OrderStatus[] = ['pending', 'confirmed', 'preparing', 'ready', 'assigned', 'on_the_way', 'reached'];
+
+const STATUS_LABEL: Record<OrderStatus, string> = {
+  pending: 'Pending',
+  confirmed: 'Confirmed',
+  preparing: 'Preparing',
+  ready: 'Ready',
+  assigned: 'Rider Assigned',
+  on_the_way: 'On the Way',
+  reached: 'Rider Arrived',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+};
+
+const STATUS_COLOR: Record<OrderStatus, string> = {
+  pending: Colors.warning,
+  confirmed: Colors.success,
+  preparing: Colors.info,
+  ready: Colors.riderAccent,
+  assigned: Colors.warning,
+  on_the_way: Colors.primary,
+  reached: Colors.riderAccent,
+  delivered: Colors.success,
+  cancelled: Colors.error,
+};
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 
 const BuyerAccountScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const { user, logout, refreshProfile } = useAuth();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+  const { data: orders } = useApiData<Order[]>(fetchMyOrders, []);
+
+  const activeOrder = orders.find((o) => ACTIVE_STATUSES.includes(o.status));
+  const history = orders.filter((o) => o.status === 'delivered' || o.status === 'cancelled').slice(0, 3);
+
+  const trackOrder = (order: Order) => {
+    navigation.navigate('OrderTracking', {
+      orderId: order.id,
+      paymentMethod: order.paymentMethod,
+      total: order.total,
+      address: order.address,
+      deliveryType: order.deliveryType,
+      isDummy: false,
+    });
+  };
 
   // Build a UserProfile from the live AuthUser — falls back to zeroes while loading
   const profile: UserProfile = user
@@ -62,6 +109,15 @@ const BuyerAccountScreen: React.FC = () => {
     finally { setRefreshing(false); }
   };
 
+  const openMenu = (menuId: string) => {
+    switch (menuId) {
+      case 'my-orders':     navigation.navigate('BuyerMyOrders'); break;
+      case 'favorites':     navigation.navigate('BuyerFavorites'); break;
+      case 'notifications': navigation.navigate('BuyerNotifications'); break;
+      default: break;
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
@@ -88,11 +144,75 @@ const BuyerAccountScreen: React.FC = () => {
         {/* Profile card uses live data from AuthContext */}
         <ProfileCard user={profile} />
 
-        <QuickActionCard />
-
         <PromoBanner loyaltyPoints={profile.loyaltyPoints} />
 
         <WalletCard balance={profile.walletBalance} />
+
+        {/* ── Active Order ─────────────────────────────────────────────── */}
+        {activeOrder && (
+          <View style={styles.menuSection}>
+            <Text style={styles.groupTitle}>Active Order</Text>
+            <View style={styles.liveCard}>
+              <View style={styles.liveTop}>
+                <View style={styles.liveIconBox}>
+                  <Ionicons name="receipt-outline" size={20} color={Colors.primary} />
+                </View>
+                <View style={styles.liveInfo}>
+                  <Text style={styles.liveTitle}>{activeOrder.restaurantName}</Text>
+                  <Text style={styles.liveSub}>
+                    #{activeOrder.id.slice(-6).toUpperCase()} · {activeOrder.items.reduce((s, i) => s + i.quantity, 0)} items
+                  </Text>
+                </View>
+                <View style={[styles.statusPill, { backgroundColor: STATUS_COLOR[activeOrder.status] + '22' }]}>
+                  <Text style={[styles.statusPillText, { color: STATUS_COLOR[activeOrder.status] }]}>
+                    {STATUS_LABEL[activeOrder.status]}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.liveBottom}>
+                <Text style={styles.liveTotal}>৳{activeOrder.total.toFixed(0)}</Text>
+                <TouchableOpacity
+                  style={styles.trackBtn}
+                  onPress={() => trackOrder(activeOrder)}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="navigate-outline" size={14} color={Colors.white} />
+                  <Text style={styles.trackBtnText}>Track Order</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* ── Order History ────────────────────────────────────────────── */}
+        {history.length > 0 && (
+          <View style={styles.menuSection}>
+            <Text style={styles.groupTitle}>Order History</Text>
+            <View style={styles.historyCard}>
+              {history.map((order, index) => (
+                <TouchableOpacity
+                  key={order.id}
+                  style={[styles.historyRow, index > 0 && { borderTopWidth: 1, borderTopColor: Colors.border }]}
+                  onPress={() => trackOrder(order)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.historyMain}>
+                    <Text style={styles.historyRestaurant} numberOfLines={1}>{order.restaurantName}</Text>
+                    <Text style={styles.historyMeta}>
+                      {formatDate(order.createdAt)} · #{order.id.slice(-6).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.historyRight}>
+                    <Text style={styles.historyTotal}>৳{order.total.toFixed(0)}</Text>
+                    <Text style={[styles.historyStatus, { color: STATUS_COLOR[order.status] }]}>
+                      {STATUS_LABEL[order.status]}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
         {menuGroups.map((group) => (
           <View key={group.id} style={styles.menuSection}>
@@ -104,6 +224,7 @@ const BuyerAccountScreen: React.FC = () => {
                   item={item}
                   isFirst={index === 0}
                   isLast={index === group.items.length - 1}
+                  onPress={() => openMenu(item.id)}
                 />
               ))}
             </View>
@@ -178,6 +299,54 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06, shadowRadius: 12, elevation: 3,
   },
   logoutSection: { paddingHorizontal: 20, marginTop: 22 },
+  liveCard: {
+    backgroundColor: Colors.white, borderRadius: 18, padding: 16,
+    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06, shadowRadius: 12, elevation: 3,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  liveTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  liveIconBox: {
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: Colors.secondary, alignItems: 'center', justifyContent: 'center',
+  },
+  liveInfo: { flex: 1, gap: 2 },
+  liveTitle: { fontSize: 14, fontWeight: '700', color: Colors.black },
+  liveSub: { fontSize: 12, color: Colors.gray, lineHeight: 17 },
+  statusPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  statusPillText: { fontSize: 11, fontWeight: '800' },
+  liveBottom: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: Colors.border,
+  },
+  liveTotal: { fontSize: 18, fontWeight: '900', color: Colors.primary },
+  trackBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: Colors.primary, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 12,
+  },
+  trackBtnText: { color: Colors.white, fontSize: 13, fontWeight: '800' },
+  historyCard: {
+    backgroundColor: Colors.white, borderRadius: 18, overflow: 'hidden',
+    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06, shadowRadius: 12, elevation: 3,
+  },
+  historyRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 12, paddingHorizontal: 16, gap: 10,
+  },
+  historyMain: { flex: 1, gap: 2 },
+  historyRestaurant: { fontSize: 14, fontWeight: '700', color: Colors.black },
+  historyMeta: { fontSize: 11, color: Colors.gray },
+  historyRight: { alignItems: 'flex-end', gap: 2 },
+  historyTotal: { fontSize: 14, fontWeight: '800', color: Colors.black },
+  historyStatus: { fontSize: 11, fontWeight: '700' },
+  addressCard: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+    backgroundColor: Colors.white, borderRadius: 18, padding: 16,
+    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06, shadowRadius: 12, elevation: 3,
+    borderWidth: 1, borderColor: Colors.border,
+  },
   logoutBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 14,
     backgroundColor: Colors.white, borderRadius: 18,

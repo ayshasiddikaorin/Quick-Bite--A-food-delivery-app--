@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +14,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import Colors from '../../../constants/colors';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
 import { useApiData } from '../../../hooks/useApiData';
+import { useNotifications } from '../../../context/NotificationContext';
 import { fetchEarnings, fetchRiderProfile, RiderEarnings } from '../../../services/riderService';
 import type { Rider } from '../../../models/rider';
 
@@ -49,6 +50,7 @@ const DUMMY_RIDER: Rider = {
 
 const RiderEarningsScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { showPopup } = useNotifications();
 
   const { status, data, reload } = useApiData<RiderEarnings>(fetchEarnings, DUMMY_EARNINGS);
   const profileState = useApiData<Rider>(fetchRiderProfile, DUMMY_RIDER);
@@ -69,12 +71,17 @@ const RiderEarningsScreen: React.FC = () => {
     data.totalDeliveries > 0 ? Math.round(data.totalEarnings / data.totalDeliveries) : 0;
   const rating = profileState.status !== 'loading' ? profileState.data.rating : DUMMY_RIDER.rating;
 
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading your earnings…" color={Colors.riderAccent} />;
+  }
+
   const handleRequestPayout = () => {
-    Alert.alert(
-      'Payout Requested',
-      `Your payout request of ৳${data.totalEarnings.toLocaleString()} has been submitted. It will be processed within 24 hours.`,
-      [{ text: 'OK' }]
-    );
+    showPopup({
+      title: 'Payout Requested 💸',
+      message: `Your payout of ৳${data.totalEarnings.toLocaleString()} has been submitted and will be processed within 24 hours.`,
+      variant: 'success',
+      autoDismissMs: 4500,
+    });
   };
 
   return (

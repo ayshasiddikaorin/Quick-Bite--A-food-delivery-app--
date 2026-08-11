@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StatusBar,
   TextInput,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +15,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import Colors from '../../../constants/colors';
 import { AuthUser, UserRole } from '../../../models/user';
+import { useNotifications } from '../../../context/NotificationContext';
 import { adminFetchUsers, adminToggleUser } from '../../../services/adminService';
 
 type RoleFilter = 'All' | 'Buyers' | 'Sellers' | 'Riders';
@@ -38,6 +38,7 @@ const FILTERS: RoleFilter[] = ['All', 'Buyers', 'Sellers', 'Riders'];
 
 const AdminUsersScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { showPopup } = useNotifications();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<RoleFilter>('All');
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -88,21 +89,19 @@ const AdminUsersScreen: React.FC = () => {
         )
       );
     } catch {
-      Alert.alert('Error', 'Could not update user status. Please try again.');
+      showPopup({ title: 'Update Failed', message: 'Could not update user status. Please try again.', variant: 'error' });
     } finally {
       setTogglingId(null);
     }
   };
 
   const showActions = (user: UserRow) => {
-    Alert.alert(user.name, `Email: ${user.email}`, [
-      { text: 'View Profile', onPress: () => {} },
-      {
-        text: user.isActive ? 'Deactivate' : 'Activate',
-        onPress: () => toggleStatus(user.userId),
-      },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    showPopup({
+      title: user.name,
+      message: `${user.email}\nRole: ${user.role} • Status: ${user.isActive ? 'Active' : 'Inactive'}`,
+      variant: 'info',
+      autoDismissMs: 4000,
+    });
   };
 
   const filteredUsers = users.filter((u) => {

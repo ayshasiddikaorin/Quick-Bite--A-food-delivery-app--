@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +18,7 @@ import PrimaryButton from '../../../components/shared/PrimaryButton';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
 import ImagePickField from '../../../components/seller/ImagePickField';
 import { useAuth } from '../../../context/AuthContext';
+import { useNotifications } from '../../../context/NotificationContext';
 import { createRestaurant } from '../../../services/restaurantService';
 import type { CreateRestaurantRequest } from '../../../models';
 import type { SellerStackParamList } from '../../../navigation/SellerNavigator';
@@ -44,6 +44,7 @@ type FormErrors = Partial<Record<keyof FormState | 'cuisine' | 'menuCategories',
 const SellerRestaurantSetupScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const { user, logout } = useAuth();
+  const { showPopup } = useNotifications();
 
   const [form, setForm] = useState<FormState>({
     name: user?.restaurantName ?? '',
@@ -100,16 +101,19 @@ const SellerRestaurantSetupScreen: React.FC = () => {
     setLoading(true);
     try {
       await createRestaurant(payload);
-      Alert.alert('Restaurant registered', 'Your restaurant is set up. Add menu items to start receiving orders.', [
-        { text: 'OK', onPress: () => navigation.replace('SellerDashboard') },
-      ]);
+      showPopup({
+        title: 'Restaurant Registered! 🍽️',
+        message: 'Your restaurant is set up. Add menu items to start receiving orders.',
+        variant: 'success',
+        autoDismissMs: 3000,
+      });
+      navigation.replace('SellerDashboard');
     } catch (err: unknown) {
-      Alert.alert(
-        'Could not register restaurant',
-        `${
-          err instanceof Error ? err.message : 'Something went wrong'
-        }. Make sure you are connected to the live backend and retry.`,
-      );
+      showPopup({
+        title: 'Registration Failed',
+        message: `${err instanceof Error ? err.message : 'Something went wrong'}. Make sure you are connected to the backend and retry.`,
+        variant: 'error',
+      });
     } finally {
       setLoading(false);
     }

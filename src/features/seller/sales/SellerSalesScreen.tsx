@@ -6,13 +6,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 import Colors from '../../../constants/colors';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
 import { useApiData } from '../../../hooks/useApiData';
 import { fetchSellerStats } from '../../../services/orderService';
 import type { SellerStats } from '../../../models';
@@ -43,6 +43,10 @@ const SellerSalesScreen: React.FC = () => {
   const todayIdx = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
   const bestIdx = weeklyData.indexOf(Math.max(...weeklyData));
 
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading sales report…" color={Colors.sellerAccent} />;
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
@@ -58,9 +62,7 @@ const SellerSalesScreen: React.FC = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Sales Report</Text>
         <TouchableOpacity style={styles.backBtn} onPress={reload} activeOpacity={0.8}>
-          {status === 'loading'
-            ? <ActivityIndicator size="small" color={Colors.primary} />
-            : <Ionicons name="refresh-outline" size={20} color={Colors.black} />}
+          <Ionicons name="refresh-outline" size={20} color={Colors.black} />
         </TouchableOpacity>
       </View>
 

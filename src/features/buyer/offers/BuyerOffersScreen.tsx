@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,6 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import OfferCard from '../../../components/OfferCard';
 import { offers as dummyOffers } from '../../../data/dummyData';
 import Colors from '../../../constants/colors';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
 import { useApiData } from '../../../hooks/useApiData';
 import { fetchActiveOffers } from '../../../services/offerService';
 import type { OfferItem } from '../../../models';
@@ -29,6 +29,10 @@ const BuyerOffersScreen: React.FC = () => {
 
   const offers = status !== 'loading' ? data : dummyOffers;
 
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading today's offers…" color={Colors.primary} />;
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
@@ -39,9 +43,7 @@ const BuyerOffersScreen: React.FC = () => {
           <Text style={styles.title}>Today's Offers</Text>
         </View>
         <TouchableOpacity style={styles.filterBtn} activeOpacity={0.75} onPress={reload}>
-          {status === 'loading'
-            ? <ActivityIndicator size="small" color={Colors.primary} />
-            : <Ionicons name="refresh-outline" size={20} color={Colors.black} />}
+          <Ionicons name="refresh-outline" size={20} color={Colors.black} />
         </TouchableOpacity>
       </View>
 

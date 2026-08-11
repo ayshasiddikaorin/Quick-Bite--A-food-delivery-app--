@@ -16,6 +16,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import Colors from '../../../constants/colors';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
 import { useApiData } from '../../../hooks/useApiData';
 import {
   fetchMyMenuItems,
@@ -40,6 +41,10 @@ const SellerMenuScreen: React.FC = () => {
   const items = menuState.status !== 'loading' ? menuState.data : EMPTY_MENU;
   const status = menuState.status;
   const reload = menuState.reload;
+
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading your menu…" color={Colors.sellerAccent} />;
+  }
 
   // Refresh whenever the screen regains focus (e.g. after add/edit food)
   useFocusEffect(

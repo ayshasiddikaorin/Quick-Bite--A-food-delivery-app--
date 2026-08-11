@@ -6,11 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../constants/colors';
+import { useNotifications } from '../../context/NotificationContext';
 import { uploadImageBase64 } from '../../services/uploadService';
 import { safeImageUri } from '../../utils/image';
 
@@ -29,6 +29,7 @@ interface Props {
  */
 const ImagePickField: React.FC<Props> = ({ value, onChange, loadingColor = Colors.sellerAccent }) => {
   const [uploading, setUploading] = useState(false);
+  const { showPopup } = useNotifications();
 
   const requestPermission = async (): Promise<boolean> => {
     const perm = await ImagePicker.getMediaLibraryPermissionsAsync();
@@ -40,7 +41,11 @@ const ImagePickField: React.FC<Props> = ({ value, onChange, loadingColor = Color
   const pickImage = async () => {
     const granted = await requestPermission();
     if (!granted) {
-      Alert.alert('Permission needed', 'Allow photo access to upload a food photo, or paste an image URL below.');
+      showPopup({
+        title: 'Permission Needed',
+        message: 'Allow photo access to upload a food image, or paste a URL in the field below.',
+        variant: 'warning',
+      });
       return;
     }
 
@@ -55,7 +60,7 @@ const ImagePickField: React.FC<Props> = ({ value, onChange, loadingColor = Color
     if (result.canceled) return;
     const asset = result.assets[0];
     if (!asset?.base64) {
-      Alert.alert('Could not read image', 'Please try another photo.');
+      showPopup({ title: 'Could Not Read Image', message: 'Please try a different photo.', variant: 'error' });
       return;
     }
 
@@ -67,10 +72,12 @@ const ImagePickField: React.FC<Props> = ({ value, onChange, loadingColor = Color
     } catch {
       // Backend unreachable — keep the local preview, flag that it is a data URI.
       onChange(dataUri);
-      Alert.alert(
-        'Offline upload',
-        'Backend is in dummy-data mode, so the photo could not be saved to the server. Paste an image URL instead.',
-      );
+      showPopup({
+        title: 'Offline Upload',
+        message: 'Backend is offline, so the photo was not saved to the server. Paste an image URL instead.',
+        variant: 'warning',
+        autoDismissMs: 4000,
+      });
     } finally {
       setUploading(false);
     }

@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Colors from '../../../constants/colors';
 import { useAuth } from '../../../context/AuthContext';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
 import type { AdminStackParamList } from '../../../navigation/AdminNavigator';
 import type { UserRole, AdminStats } from '../../../models';
 import { useApiData } from '../../../hooks/useApiData';
@@ -143,6 +143,10 @@ const AdminDashboardScreen: React.FC = () => {
     { label: 'Cancelled',   percent: Math.round((s.cancelledOrders  / total) * 100), color: Colors.error       },
   ];
 
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading platform stats…" color={Colors.adminAccent} />;
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
@@ -154,9 +158,7 @@ const AdminDashboardScreen: React.FC = () => {
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity style={styles.iconBtn} onPress={reload}>
-            {status === 'loading'
-              ? <ActivityIndicator size="small" color={Colors.primary} />
-              : <Ionicons name="refresh-outline" size={20} color={Colors.black} />}
+            <Ionicons name="refresh-outline" size={20} color={Colors.black} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.logoutBtn} onPress={() => setShowLogout(true)} activeOpacity={0.8}>
             <Ionicons name="log-out-outline" size={20} color={Colors.error} />

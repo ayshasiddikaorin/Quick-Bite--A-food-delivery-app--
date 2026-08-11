@@ -16,6 +16,9 @@ import CheckoutScreen from '../features/buyer/checkout/CheckoutScreen';
 import PaymentScreen from '../features/buyer/checkout/PaymentScreen';
 import OrderTrackingScreen from '../features/buyer/orderTracking/OrderTrackingScreen';
 import RestaurantScreen from '../features/buyer/restaurant/RestaurantScreen';
+import BuyerMyOrdersScreen from '../features/buyer/profile/activity/BuyerMyOrdersScreen';
+import BuyerFavoritesScreen from '../features/buyer/profile/activity/BuyerFavoritesScreen';
+import BuyerNotificationsScreen from '../features/buyer/profile/activity/BuyerNotificationsScreen';
 import Colors from '../constants/colors';
 
 // ─── Param lists ──────────────────────────────────────────────────────────────
@@ -23,6 +26,9 @@ export type BuyerStackParamList = {
   BuyerTabs: undefined;
   ProfileDetails: undefined;
   EditProfile: undefined;
+  BuyerMyOrders: undefined;
+  BuyerFavorites: undefined;
+  BuyerNotifications: undefined;
   RestaurantPage: {
     restaurantId: string;
     offerDiscount?: number;
@@ -175,6 +181,9 @@ export default function BuyerNavigator() {
       <Stack.Screen name="BuyerTabs"       component={BuyerTabs} />
       <Stack.Screen name="ProfileDetails"  component={ProfileDetailsScreen} />
       <Stack.Screen name="EditProfile"     component={EditProfileScreen} />
+      <Stack.Screen name="BuyerMyOrders"       component={BuyerMyOrdersScreen} />
+      <Stack.Screen name="BuyerFavorites"      component={BuyerFavoritesScreen} />
+      <Stack.Screen name="BuyerNotifications"  component={BuyerNotificationsScreen} />
       <Stack.Screen name="RestaurantPage"  component={RestaurantScreen} />
       <Stack.Screen name="Checkout"        component={CheckoutScreen} />
       <Stack.Screen name="Payment"         component={PaymentScreen} />

@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +16,7 @@ import Colors from '../../../constants/colors';
 import InputField from '../../../components/shared/InputField';
 import PrimaryButton from '../../../components/shared/PrimaryButton';
 import ImagePickField from '../../../components/seller/ImagePickField';
+import { useNotifications } from '../../../context/NotificationContext';
 import { createMenuItem, updateMenuItem } from '../../../services/menuService';
 import type { MenuItem } from '../../../models';
 import type { SellerStackParamList } from '../../../navigation/SellerNavigator';
@@ -29,6 +29,7 @@ const CATEGORIES = ['Burgers', 'Pizza', 'Chicken', 'Dessert', 'Drinks', 'Rice', 
 const SellerAddFoodScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<AddRouteProps>();
+  const { showPopup } = useNotifications();
   const editing = route.params?.item;
 
   const [name, setName] = useState(editing?.name ?? '');
@@ -69,21 +70,30 @@ const SellerAddFoodScreen: React.FC = () => {
     try {
       if (editing) {
         await updateMenuItem(editing.id, payload);
-        Alert.alert('Success', `"${name}" has been updated.`, [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
+        showPopup({
+          title: 'Item Updated ✅',
+          message: `"${name}" has been updated successfully.`,
+          variant: 'success',
+          autoDismissMs: 2500,
+        });
+        navigation.goBack();
       } else {
         await createMenuItem(payload);
-        Alert.alert('Success', `"${name}" has been added to your menu!`, [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
+        showPopup({
+          title: 'Item Added 🍽️',
+          message: `"${name}" has been added to your menu!`,
+          variant: 'success',
+          autoDismissMs: 2500,
+        });
+        navigation.goBack();
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Something went wrong';
-      Alert.alert(
-        editing ? 'Update failed' : 'Could not add item',
-        `${msg}.\nConnect to the live backend, then retry.`,
-      );
+      showPopup({
+        title: editing ? 'Update Failed' : 'Could Not Add Item',
+        message: `${msg}. Connect to the live backend and retry.`,
+        variant: 'error',
+      });
     } finally {
       setLoading(false);
     }

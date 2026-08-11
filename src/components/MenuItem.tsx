@@ -13,9 +13,10 @@ interface Props {
   item: MenuItemData;
   isFirst?: boolean;
   isLast?: boolean;
+  onPress?: () => void;
 }
 
-const MenuItem: React.FC<Props> = ({ item, isFirst = false, isLast = false }) => {
+const MenuItem: React.FC<Props> = ({ item, isFirst = false, isLast = false, onPress }) => {
   const iconName = item.icon as keyof typeof Ionicons.glyphMap;
 
   return (
@@ -27,6 +28,7 @@ const MenuItem: React.FC<Props> = ({ item, isFirst = false, isLast = false }) =>
         !isLast && styles.withBorder,
       ]}
       activeOpacity={0.7}
+      onPress={onPress}
     >
       {/* Icon */}
       <View style={[styles.iconBg, { backgroundColor: item.iconBg }]}>
