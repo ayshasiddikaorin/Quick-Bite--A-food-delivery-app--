@@ -73,8 +73,17 @@ export function createApp() {
   // Health check
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
-  // Root – minimal response (kept dependency-free to avoid serverless quirks)
-  app.get('/', (_req, res) => res.json({ message: 'Backend is running', health: '/health' }));
+  // Root – lightweight landing page with live MongoDB status
+  app.get('/', (_req, res) => {
+    const dbConnected = mongoose.connection.readyState === 1;
+    res.json({
+      message: dbConnected
+        ? 'Backend is running and MongoDB is connected'
+        : 'Backend is running but MongoDB is not connected',
+      health: '/health',
+      database: dbConnected ? mongoose.connection.name || null : null,
+    });
+  });
 
   // ── Error handler (must be last) ───────────────────────────────────────────
   app.use(errorHandler);
