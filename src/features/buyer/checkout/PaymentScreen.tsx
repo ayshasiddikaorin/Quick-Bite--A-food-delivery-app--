@@ -16,8 +16,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Colors from '../../../constants/colors';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
+import { useNotifications } from '../../../context/NotificationContext';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
-import { clearCart } from '../../../storage/cartStorage';
+import { clearCart, getCart } from '../../../storage/cartStorage';
+import { placeOrder } from '../../../services/orderService';
+import type { CartItem } from '../../../models/cart';
+import type { OrderItem, PlaceOrderPayload } from '../../../models/order';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 type RouteProps = RouteProp<BuyerStackParamList, 'Payment'>;
@@ -79,6 +83,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 const PaymentScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteProps>();
+  const { showPopup } = useNotifications();
 
   const { subtotal, discount, tax, deliveryFee, total, address, deliveryType } =
     route.params;
@@ -94,27 +99,105 @@ const PaymentScreen: React.FC = () => {
   const confirmOrder = async () => {
     setShowConfirm(false);
     setPlacing(true);
-    // Simulate network call
-    await new Promise((r) => setTimeout(r, 1200));
-    await clearCart();
-    setPlacing(false);
-    // Navigate to tracking, replacing the checkout stack so back doesn't return to payment
-    navigation.reset({
-      index: 0,
-      routes: [
-        { name: 'BuyerTabs' },
-        {
-          name: 'OrderTracking',
-          params: {
-            orderId: `#${Math.floor(1000 + Math.random() * 9000)}`,
-            paymentMethod: selectedOption.label,
-            total,
-            address,
-            deliveryType,
+
+    try {
+      const cart = await getCart();
+      if (cart.length === 0) {
+        showPopup({
+          title: 'Cart is Empty',
+          message: 'Please add items to your cart before placing an order.',
+          variant: 'warning',
+        });
+        setPlacing(false);
+        return;
+      }
+
+      const first = cart[0] as CartItem & { restaurant?: string };
+      const restaurantId =
+        first.restaurantId ||
+        (first.id.includes('_') ? first.id.split('_')[0] : first.id);
+      const restaurantName = first.restaurantName || first.restaurant || 'Restaurant';
+
+      const items: OrderItem[] = cart.map((c) => ({
+        menuItemId: c.menuItemId || (c.id.includes('_') ? c.id.split('_')[1] : c.id),
+        name: c.name,
+        image: c.image,
+        price: c.price,
+        quantity: c.quantity,
+      }));
+
+      const payload: PlaceOrderPayload = {
+        restaurantId,
+        restaurantName,
+        items,
+        subtotal,
+        deliveryFee,
+        discount,
+        tax,
+        total,
+        address,
+        deliveryType,
+        paymentMethod: selectedMethod === 'cod' ? 'Cash on Delivery' : selectedOption.label,
+      };
+
+      // Try the real backend. If it's reachable we get a real order id and
+      // the tracker polls live status.
+      const order = await placeOrder(payload);
+      await clearCart();
+      setPlacing(false);
+
+      showPopup({
+        title: 'Order Placed! 🎉',
+        message: `Your order from ${restaurantName} has been sent to the restaurant.`,
+        variant: 'success',
+        autoDismissMs: 3000,
+      });
+
+      navigation.reset({
+        index: 0,
+        routes: [
+          { name: 'BuyerTabs' },
+          {
+            name: 'OrderTracking',
+            params: {
+              orderId: order.id,
+              paymentMethod: selectedOption.label,
+              total,
+              address,
+              deliveryType,
+              isDummy: false,
+            },
           },
-        },
-      ],
-    });
+        ],
+      });
+    } catch {
+      // Backend unreachable — simulate the order locally (dummy data mode).
+      await clearCart();
+      setPlacing(false);
+      showPopup({
+        title: 'Demo / Offline Mode',
+        message: 'Backend is unreachable, so the order was simulated locally.',
+        variant: 'info',
+        autoDismissMs: 3000,
+      });
+      navigation.reset({
+        index: 0,
+        routes: [
+          { name: 'BuyerTabs' },
+          {
+            name: 'OrderTracking',
+            params: {
+              orderId: `#${Math.floor(1000 + Math.random() * 9000)}`,
+              paymentMethod: selectedOption.label,
+              total,
+              address,
+              deliveryType,
+              isDummy: true,
+            },
+          },
+        ],
+      });
+    }
   };
 
   return (

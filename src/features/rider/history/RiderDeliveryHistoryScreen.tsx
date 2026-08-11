@@ -1,33 +1,15 @@
 import React, { useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet,
-  TouchableOpacity, StatusBar,
+  TouchableOpacity, StatusBar, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Colors from '../../../constants/colors';
-
-interface HistoryItem {
-  id: string;
-  orderId: string;
-  restaurant: string;
-  customer: string;
-  payout: string;
-  distance: string;
-  deliveredAt: string;
-  rating: number | null;
-}
-
-const HISTORY: HistoryItem[] = [
-  { id: 'h1', orderId: '#1045', restaurant: 'Spice Garden', customer: 'Rina B.', payout: '৳75', distance: '2.1 km', deliveredAt: 'Today, 2:30 PM', rating: 5 },
-  { id: 'h2', orderId: '#1044', restaurant: 'Pizza Hub', customer: 'Rafi M.', payout: '৳90', distance: '3.3 km', deliveredAt: 'Today, 12:10 PM', rating: 4 },
-  { id: 'h3', orderId: '#1043', restaurant: 'Burger BD', customer: 'Sara K.', payout: '৳60', distance: '1.8 km', deliveredAt: 'Yesterday, 7:45 PM', rating: 5 },
-  { id: 'h4', orderId: '#1040', restaurant: 'Sushi Town', customer: 'Noor J.', payout: '৳120', distance: '4.2 km', deliveredAt: 'Yesterday, 1:20 PM', rating: null },
-  { id: 'h5', orderId: '#1038', restaurant: 'Spice Garden', customer: 'Kamal H.', payout: '৳80', distance: '2.6 km', deliveredAt: 'Mon, Jan 13', rating: 3 },
-  { id: 'h6', orderId: '#1035', restaurant: 'Thai Express', customer: 'Lina S.', payout: '৳110', distance: '3.9 km', deliveredAt: 'Mon, Jan 13', rating: 5 },
-  { id: 'h7', orderId: '#1030', restaurant: 'Deshi Bhojon', customer: 'Tariq A.', payout: '৳65', distance: '1.5 km', deliveredAt: 'Sun, Jan 12', rating: 4 },
-];
+import { useApiData } from '../../../hooks/useApiData';
+import { fetchDeliveryHistory } from '../../../services/riderService';
+import type { Order } from '../../../models/order';
 
 type Filter = 'all' | 'today' | 'yesterday' | 'week';
 
@@ -38,16 +20,88 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: 'week', label: 'This Week' },
 ];
 
-const StarRating: React.FC<{ rating: number }> = ({ rating }) => (
-  <View style={{ flexDirection: 'row', gap: 2 }}>
-    {[1, 2, 3, 4, 5].map((s) => (
-      <Ionicons
-        key={s}
-        name={s <= rating ? 'star' : 'star-outline'}
-        size={12}
-        color={Colors.warning}
-      />
-    ))}
+const DAY_MS = 86400000;
+
+const DUMMY_HISTORY: Order[] = [
+  { id: 'h1', customerId: 'c1', customerName: 'Rina B.', restaurantId: 'r1', restaurantName: 'Spice Garden', items: [], subtotal: 320, deliveryFee: 75, discount: 0, tax: 20, total: 415, status: 'delivered', address: 'Mirpur-2', deliveryType: 'standard', paymentMethod: 'cash', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'h2', customerId: 'c2', customerName: 'Rafi M.', restaurantId: 'r2', restaurantName: 'Pizza Hub', items: [], subtotal: 480, deliveryFee: 90, discount: 0, tax: 29, total: 599, status: 'delivered', address: 'Banani', deliveryType: 'express', paymentMethod: 'cash', createdAt: new Date(Date.now() - 3 * 3600000).toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'h3', customerId: 'c3', customerName: 'Sara K.', restaurantId: 'r3', restaurantName: 'Burger BD', items: [], subtotal: 300, deliveryFee: 60, discount: 0, tax: 18, total: 378, status: 'delivered', address: 'Uttara', deliveryType: 'standard', paymentMethod: 'card', createdAt: new Date(Date.now() - DAY_MS).toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'h4', customerId: 'c4', customerName: 'Noor J.', restaurantId: 'r4', restaurantName: 'Sushi Town', items: [], subtotal: 640, deliveryFee: 120, discount: 30, tax: 40, total: 770, status: 'delivered', address: 'Gulshan', deliveryType: 'express', paymentMethod: 'card', createdAt: new Date(Date.now() - 2 * DAY_MS).toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'h5', customerId: 'c5', customerName: 'Kamal H.', restaurantId: 'r1', restaurantName: 'Spice Garden', items: [], subtotal: 400, deliveryFee: 80, discount: 0, tax: 24, total: 504, status: 'delivered', address: 'Dhanmondi', deliveryType: 'standard', paymentMethod: 'cash', createdAt: new Date(Date.now() - 5 * DAY_MS).toISOString(), updatedAt: new Date().toISOString() },
+  { id: 'h6', customerId: 'c6', customerName: 'Lina S.', restaurantId: 'r6', restaurantName: 'Thai Express', items: [], subtotal: 560, deliveryFee: 110, discount: 0, tax: 34, total: 704, status: 'delivered', address: 'Banani', deliveryType: 'standard', paymentMethod: 'card', createdAt: new Date(Date.now() - 8 * DAY_MS).toISOString(), updatedAt: new Date().toISOString() },
+];
+
+interface HistoryItem {
+  id: string;
+  orderId: string;
+  restaurant: string;
+  customer: string;
+  payout: number;
+  deliveryType: string;
+  deliveredAt: number;
+}
+
+const startOfDay = (d: Date): number =>
+  new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+
+const toHistoryItem = (o: Order): HistoryItem => ({
+  id: o.id,
+  orderId: `#${o.id.slice(-4)}`,
+  restaurant: o.restaurantName,
+  customer: o.customerName,
+  payout: o.deliveryFee || 0,
+  deliveryType: o.deliveryType === 'express' ? 'Express' : 'Standard',
+  deliveredAt: new Date(o.createdAt).getTime(),
+});
+
+const formatWhen = (ts: number): string => {
+  const d = new Date(ts);
+  const now = new Date();
+  const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / DAY_MS);
+  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (diffDays <= 1) return `Today, ${time}`;
+  if (diffDays === 2) return `Yesterday, ${time}`;
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+};
+
+const HistoryCard: React.FC<{ item: HistoryItem }> = ({ item }) => (
+  <View style={styles.card}>
+    <View style={styles.cardTop}>
+      <View style={styles.orderIdBadge}>
+        <Text style={styles.orderIdText}>{item.orderId}</Text>
+      </View>
+      <View style={styles.payoutBadge}>
+        <Text style={styles.payoutText}>৳{item.payout}</Text>
+      </View>
+    </View>
+
+    <View style={styles.cardMid}>
+      <View style={styles.routeRow}>
+        <View style={[styles.dot, { backgroundColor: Colors.warning }]} />
+        <Text style={styles.restaurantName}>{item.restaurant}</Text>
+      </View>
+      <View style={styles.routeConnector}>
+        <View style={styles.connLine} />
+      </View>
+      <View style={styles.routeRow}>
+        <View style={[styles.dot, { backgroundColor: Colors.riderAccent }]} />
+        <Text style={styles.customerName}>{item.customer}</Text>
+      </View>
+    </View>
+
+    <View style={styles.cardBottom}>
+      <View style={styles.metaItem}>
+        <Ionicons name="flash-outline" size={12} color={Colors.gray} />
+        <Text style={styles.metaText}>{item.deliveryType}</Text>
+      </View>
+      <View style={styles.metaItem}>
+        <Ionicons name="time-outline" size={12} color={Colors.gray} />
+        <Text style={styles.metaText}>{formatWhen(item.deliveredAt)}</Text>
+      </View>
+      <View style={styles.unratedBadge}>
+        <Text style={styles.unratedText}>Delivered</Text>
+      </View>
+    </View>
   </View>
 );
 
@@ -55,14 +109,27 @@ const RiderDeliveryHistoryScreen: React.FC = () => {
   const navigation = useNavigation();
   const [activeFilter, setActiveFilter] = useState<Filter>('all');
 
-  const filtered = HISTORY.filter((h) => {
-    if (activeFilter === 'today') return h.deliveredAt.startsWith('Today');
-    if (activeFilter === 'yesterday') return h.deliveredAt.startsWith('Yesterday');
-    if (activeFilter === 'week') return !h.deliveredAt.startsWith('Sun');
+  const { status, data, reload } = useApiData<Order[]>(fetchDeliveryHistory, DUMMY_HISTORY);
+  const loading = status === 'loading';
+
+  // Refresh whenever the screen regains focus
+  useFocusEffect(
+    React.useCallback(() => { reload(); }, [reload]),
+  );
+
+  const now = new Date();
+  const todayStart = startOfDay(now);
+  const history: HistoryItem[] = (data ?? []).map(toHistoryItem);
+
+  const filtered = history.filter((h) => {
+    if (activeFilter === 'today') return h.deliveredAt >= todayStart;
+    if (activeFilter === 'yesterday') return h.deliveredAt >= todayStart - DAY_MS && h.deliveredAt < todayStart;
+    if (activeFilter === 'week') return h.deliveredAt >= todayStart - 6 * DAY_MS;
     return true;
   });
 
-  const totalPayout = filtered.reduce((sum, h) => sum + parseInt(h.payout.replace('৳', '')), 0);
+  const totalPayout = filtered.reduce((sum, h) => sum + h.payout, 0);
+  const avgPayout = filtered.length > 0 ? Math.round(totalPayout / filtered.length) : 0;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -73,110 +140,77 @@ const RiderDeliveryHistoryScreen: React.FC = () => {
           <Ionicons name="arrow-back" size={22} color={Colors.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Delivery History</Text>
-        <View style={styles.countBadge}>
-          <Text style={styles.countText}>{filtered.length}</Text>
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.refreshBtn} onPress={reload} activeOpacity={0.8}>
+            <Ionicons name="refresh-outline" size={18} color={Colors.black} />
+          </TouchableOpacity>
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>{loading ? '…' : filtered.length}</Text>
+          </View>
         </View>
       </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(i) => i.id}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <>
-            {/* Filter chips */}
-            <FlatList
-              data={FILTERS}
-              keyExtractor={(f) => f.key}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterRow}
-              renderItem={({ item: f }) => (
-                <TouchableOpacity
-                  style={[styles.filterChip, activeFilter === f.key && styles.filterChipActive]}
-                  onPress={() => setActiveFilter(f.key)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={[styles.filterChipText, activeFilter === f.key && styles.filterChipTextActive]}>
-                    {f.label}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
+      {loading ? (
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="large" color={Colors.riderAccent} />
+          <Text style={styles.emptyTitle}>Loading history...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(i) => i.id}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <>
+              {/* Filter chips */}
+              <FlatList
+                data={FILTERS}
+                keyExtractor={(f) => f.key}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterRow}
+                renderItem={({ item: f }) => (
+                  <TouchableOpacity
+                    style={[styles.filterChip, activeFilter === f.key && styles.filterChipActive]}
+                    onPress={() => setActiveFilter(f.key)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.filterChipText, activeFilter === f.key && styles.filterChipTextActive]}>
+                      {f.label}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              />
 
-            {/* Summary strip */}
-            <View style={styles.summaryStrip}>
-              <View style={styles.stripItem}>
-                <Text style={styles.stripValue}>{filtered.length}</Text>
-                <Text style={styles.stripLabel}>Deliveries</Text>
-              </View>
-              <View style={styles.stripDivider} />
-              <View style={styles.stripItem}>
-                <Text style={styles.stripValue}>৳{totalPayout}</Text>
-                <Text style={styles.stripLabel}>Earned</Text>
-              </View>
-              <View style={styles.stripDivider} />
-              <View style={styles.stripItem}>
-                <Text style={styles.stripValue}>
-                  {filtered.filter((h) => h.rating === 5).length}
-                </Text>
-                <Text style={styles.stripLabel}>5⭐ Ratings</Text>
-              </View>
-            </View>
-          </>
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="time-outline" size={52} color={Colors.border} />
-            <Text style={styles.emptyTitle}>No deliveries found</Text>
-          </View>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.cardTop}>
-              <View style={styles.orderIdBadge}>
-                <Text style={styles.orderIdText}>{item.orderId}</Text>
-              </View>
-              <View style={styles.payoutBadge}>
-                <Text style={styles.payoutText}>{item.payout}</Text>
-              </View>
-            </View>
-
-            <View style={styles.cardMid}>
-              <View style={styles.routeRow}>
-                <View style={[styles.dot, { backgroundColor: Colors.warning }]} />
-                <Text style={styles.restaurantName}>{item.restaurant}</Text>
-              </View>
-              <View style={styles.routeConnector}>
-                <View style={styles.connLine} />
-              </View>
-              <View style={styles.routeRow}>
-                <View style={[styles.dot, { backgroundColor: Colors.riderAccent }]} />
-                <Text style={styles.customerName}>{item.customer}</Text>
-              </View>
-            </View>
-
-            <View style={styles.cardBottom}>
-              <View style={styles.metaItem}>
-                <Ionicons name="navigate-outline" size={12} color={Colors.gray} />
-                <Text style={styles.metaText}>{item.distance}</Text>
-              </View>
-              <View style={styles.metaItem}>
-                <Ionicons name="time-outline" size={12} color={Colors.gray} />
-                <Text style={styles.metaText}>{item.deliveredAt}</Text>
-              </View>
-              {item.rating !== null ? (
-                <StarRating rating={item.rating} />
-              ) : (
-                <View style={styles.unratedBadge}>
-                  <Text style={styles.unratedText}>No rating</Text>
+              {/* Summary strip */}
+              <View style={styles.summaryStrip}>
+                <View style={styles.stripItem}>
+                  <Text style={styles.stripValue}>{filtered.length}</Text>
+                  <Text style={styles.stripLabel}>Deliveries</Text>
                 </View>
-              )}
+                <View style={styles.stripDivider} />
+                <View style={styles.stripItem}>
+                  <Text style={styles.stripValue}>৳{totalPayout}</Text>
+                  <Text style={styles.stripLabel}>Earned</Text>
+                </View>
+                <View style={styles.stripDivider} />
+                <View style={styles.stripItem}>
+                  <Text style={styles.stripValue}>৳{avgPayout}</Text>
+                  <Text style={styles.stripLabel}>Avg Fee</Text>
+                </View>
+              </View>
+            </>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="time-outline" size={52} color={Colors.border} />
+              <Text style={styles.emptyTitle}>No deliveries found</Text>
             </View>
-          </View>
-        )}
-      />
+          }
+          renderItem={({ item }) => <HistoryCard item={item} />}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -195,6 +229,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.lightGray, alignItems: 'center', justifyContent: 'center',
   },
   headerTitle: { fontSize: 18, fontWeight: '800', color: Colors.black },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  refreshBtn: {
+    width: 36, height: 36, borderRadius: 12,
+    backgroundColor: Colors.lightGray, alignItems: 'center', justifyContent: 'center',
+  },
   countBadge: {
     minWidth: 28, height: 28, borderRadius: 14,
     backgroundColor: Colors.riderAccent, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6,
@@ -243,5 +282,6 @@ const styles = StyleSheet.create({
   unratedBadge: { backgroundColor: Colors.lightGray, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
   unratedText: { fontSize: 10, color: Colors.gray, fontWeight: '500' },
   emptyState: { alignItems: 'center', paddingTop: 60, gap: 12 },
+  loadingState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
   emptyTitle: { fontSize: 16, fontWeight: '700', color: Colors.gray },
 });

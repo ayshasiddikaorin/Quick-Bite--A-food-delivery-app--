@@ -14,13 +14,17 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Colors from '../../../constants/colors';
+import ConfirmModal from '../../../components/shared/ConfirmModal';
+import { useNotifications } from '../../../context/NotificationContext';
+import { confirmOrderReceived, fetchOrderById } from '../../../services/orderService';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
+import type { OrderStatus } from '../../../models';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 type RouteProps = RouteProp<BuyerStackParamList, 'OrderTracking'>;
 
 // ─── Status steps ─────────────────────────────────────────────────────────────
-type StepKey = 'confirmed' | 'preparing' | 'ready' | 'on_the_way' | 'delivered';
+type StepKey = 'confirmed' | 'preparing' | 'ready' | 'on_the_way' | 'reached' | 'delivered';
 
 interface Step {
   key: StepKey;
@@ -55,6 +59,12 @@ const STEPS: Step[] = [
     icon: 'bicycle-outline',
   },
   {
+    key: 'reached',
+    label: 'Rider Arrived',
+    sublabel: 'Your rider is at your location',
+    icon: 'location-outline',
+  },
+  {
     key: 'delivered',
     label: 'Delivered',
     sublabel: 'Enjoy your meal! 🎉',
@@ -62,20 +72,66 @@ const STEPS: Step[] = [
   },
 ];
 
-// Auto-advance current step every few seconds (demo purposes)
-const STEP_KEYS: StepKey[] = ['confirmed', 'preparing', 'ready', 'on_the_way', 'delivered'];
+const STEP_KEYS: StepKey[] = ['confirmed', 'preparing', 'ready', 'on_the_way', 'reached', 'delivered'];
+
+// Backend status → timeline step index
+function statusToIndex(status?: OrderStatus): number {
+  switch (status) {
+    case 'pending':
+    case 'confirmed': return 0;
+    case 'preparing': return 1;
+    case 'ready': return 2;
+    case 'assigned':
+    case 'on_the_way': return 3;
+    case 'reached': return 4;
+    case 'delivered': return 5;
+    case 'cancelled': return 0;
+    default: return 1;
+  }
+}
+
+const ETA_LABELS: Record<string, string> = {
+  confirmed: '~35 min',
+  preparing: '~28 min',
+  ready: '~18 min',
+  on_the_way: '~8 min',
+  reached: 'Now',
+  delivered: 'Delivered!',
+};
 
 const OrderTrackingScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteProps>();
 
-  const { orderId, paymentMethod, total, address, deliveryType } = route.params;
+  const { orderId, paymentMethod, total, address, deliveryType, isDummy } = route.params;
 
   const [currentStepIndex, setCurrentStepIndex] = useState(1); // start at "Preparing"
+  const [riderName, setRiderName] = useState<string | null>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const { showPopup } = useNotifications();
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
+
+  // Live polling: refresh the real order status every few seconds.
+  useEffect(() => {
+    if (isDummy) return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const order = await fetchOrderById(orderId);
+        if (cancelled) return;
+        setCurrentStepIndex(statusToIndex(order.status));
+        if (order.riderName) setRiderName(order.riderName);
+      } catch { /* backend offline — keep last known */ }
+    };
+    poll();
+    const interval = setInterval(poll, 6000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [orderId, isDummy]);
 
   // Pulse animation for active step
   useEffect(() => {
+    if (isDummy) return;
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.15, duration: 700, useNativeDriver: true }),
@@ -84,24 +140,44 @@ const OrderTrackingScreen: React.FC = () => {
     );
     loop.start();
     return () => loop.stop();
-  }, [pulseAnim]);
+  }, [pulseAnim, isDummy]);
 
-  // Auto-advance through steps every 4s (demo)
+  // Demo auto-advance (only in dummy data mode)
   useEffect(() => {
+    if (!isDummy) return;
     if (currentStepIndex >= STEP_KEYS.length - 1) return;
     const timer = setTimeout(() => setCurrentStepIndex((i) => i + 1), 4000);
     return () => clearTimeout(timer);
-  }, [currentStepIndex]);
+  }, [currentStepIndex, isDummy]);
 
-  const currentStep = STEPS[currentStepIndex];
+  const currentStep = currentStepIndex >= 0 ? STEPS[currentStepIndex] : STEPS[0];
   const isDelivered = currentStepIndex === STEP_KEYS.length - 1;
+  const reachedStepIndex = STEP_KEYS.indexOf('reached');
+  const isReached = currentStepIndex === reachedStepIndex;
 
-  const ETA_LABELS: Record<string, string> = {
-    confirmed: '~35 min',
-    preparing: '~28 min',
-    ready: '~18 min',
-    on_the_way: '~8 min',
-    delivered: 'Delivered!',
+  const handleConfirmReceived = async () => {
+    if (isDummy) return;
+    setConfirming(true);
+    try {
+      await confirmOrderReceived(orderId);
+      const fresh = await fetchOrderById(orderId);
+      setCurrentStepIndex(statusToIndex(fresh.status));
+      setShowConfirm(false);
+      showPopup({
+        title: 'Order Received! 🎉',
+        message: 'Thank you! Enjoy your meal.',
+        variant: 'success',
+        autoDismissMs: 4000,
+      });
+    } catch (err: unknown) {
+      showPopup({
+        title: 'Update Failed',
+        message: `${err instanceof Error ? err.message : 'Something went wrong'}. Please try again.`,
+        variant: 'error',
+      });
+    } finally {
+      setConfirming(false);
+    }
   };
 
   return (
@@ -122,6 +198,13 @@ const OrderTrackingScreen: React.FC = () => {
           <Ionicons name="help-circle-outline" size={22} color={Colors.primary} />
         </TouchableOpacity>
       </View>
+
+      {isDummy && (
+        <View style={styles.fallbackBanner}>
+          <Ionicons name="cloud-offline-outline" size={13} color={Colors.warning} />
+          <Text style={styles.fallbackText}>Dummy data mode · backend offline — simulated order</Text>
+        </View>
+      )}
 
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -189,7 +272,7 @@ const OrderTrackingScreen: React.FC = () => {
               <Text style={styles.riderAvatarText}>KH</Text>
             </View>
             <View style={styles.riderInfo}>
-              <Text style={styles.riderName}>Karim Hossain</Text>
+              <Text style={styles.riderName}>{riderName ?? 'Karim Hossain'}</Text>
               <View style={styles.riderMeta}>
                 <Ionicons name="star" size={12} color={Colors.warning} />
                 <Text style={styles.riderRating}>4.9</Text>
@@ -277,6 +360,18 @@ const OrderTrackingScreen: React.FC = () => {
           })}
         </View>
 
+        {/* ── Confirm received (when rider has arrived) ─────────────────── */}
+        {isReached && !isDummy && (
+          <TouchableOpacity
+            style={styles.confirmReceivedBtn}
+            onPress={() => setShowConfirm(true)}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="checkmark-done-outline" size={20} color={Colors.white} />
+            <Text style={styles.confirmReceivedText}>Confirm Received</Text>
+          </TouchableOpacity>
+        )}
+
         {/* ── Delivery address ─────────────────────────────────────────── */}
         <View style={styles.addressCard}>
           <Ionicons name="location" size={18} color={Colors.primary} />
@@ -294,6 +389,17 @@ const OrderTrackingScreen: React.FC = () => {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      <ConfirmModal
+        visible={showConfirm}
+        title="Confirm Received"
+        message="Have you received your order? The delivery will be marked as complete."
+        confirmText={confirming ? 'Confirming…' : 'Yes, Received'}
+        cancelText="Not Yet"
+        variant="success"
+        onConfirm={handleConfirmReceived}
+        onCancel={() => setShowConfirm(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -331,6 +437,14 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: '800', color: Colors.black },
   scroll: { padding: 20, paddingBottom: 40 },
 
+  // Dummy-data banner
+  fallbackBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#FFF8E1', paddingHorizontal: 16, paddingVertical: 8,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  fallbackText: { fontSize: 11, color: Colors.warning, fontWeight: '700', flex: 1 },
+
   // ETA card
   etaCard: {
     flexDirection: 'row',
@@ -365,7 +479,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
-  mapBg: { ...StyleSheet.absoluteFillObject },
+  mapBg: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   mapLineH: {
     position: 'absolute',
     left: 0,
@@ -570,4 +684,22 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   reviewBtnText: { color: Colors.white, fontSize: 15, fontWeight: '800' },
+
+  // Confirm received button
+  confirmReceivedBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.success,
+    borderRadius: 18,
+    height: 52,
+    marginBottom: 16,
+    shadowColor: Colors.success,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  confirmReceivedText: { color: Colors.white, fontSize: 15, fontWeight: '800' },
 });

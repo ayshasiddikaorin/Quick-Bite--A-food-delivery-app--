@@ -6,92 +6,71 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import Colors from '../../../constants/colors';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
+import { useApiData } from '../../../hooks/useApiData';
+import { useNotifications } from '../../../context/NotificationContext';
+import ConfirmModal from '../../../components/shared/ConfirmModal';
+import {
+  adminFetchAllRestaurants,
+  adminApproveRestaurant,
+} from '../../../services/restaurantService';
+import type { Restaurant } from '../../../models/restaurant';
 
-interface MockRestaurant {
-  id: string;
-  name: string;
-  cuisine: string;
-  rating: number;
-  orderCount: number;
-  isApproved: boolean;
-}
-
-const MOCK_RESTAURANTS: MockRestaurant[] = [
-  {
-    id: '1',
-    name: 'Spice Garden',
-    cuisine: 'Bangladeshi, Indian',
-    rating: 4.7,
-    orderCount: 1420,
-    isApproved: true,
-  },
-  {
-    id: '2',
-    name: 'Burger House',
-    cuisine: 'American, Fast Food',
-    rating: 4.5,
-    orderCount: 892,
-    isApproved: true,
-  },
-  {
-    id: '3',
-    name: 'Sultan Dine',
-    cuisine: 'Mughlai, Biryani',
-    rating: 4.8,
-    orderCount: 2103,
-    isApproved: true,
-  },
-  {
-    id: '4',
-    name: 'Green Leaf Café',
-    cuisine: 'Healthy, Vegan',
-    rating: 4.2,
-    orderCount: 0,
-    isApproved: false,
-  },
-  {
-    id: '5',
-    name: 'The Grill House',
-    cuisine: 'BBQ, Grills',
-    rating: 4.3,
-    orderCount: 0,
-    isApproved: false,
-  },
+const DUMMY_RESTAURANTS: Restaurant[] = [
+  { id: '1', name: 'Spice Garden', ownerId: 'o1', ownerName: 'Rahim Uddin', cuisine: ['Bangladeshi', 'Indian'], rating: 4.7, reviews: 1420, totalOrders: 1420, coverImage: '', logo: '', phone: '', address: 'Dhanmondi, Dhaka', isOpen: true, isApproved: true, deliveryTime: '20-30 min', deliveryFee: 1.99, minOrder: 8, menuCategories: ['Popular'] },
+  { id: '2', name: 'Burger House', ownerId: 'o2', ownerName: 'Sadia Islam', cuisine: ['American', 'Fast Food'], rating: 4.5, reviews: 892, totalOrders: 892, coverImage: '', logo: '', phone: '', address: 'Gulshan, Dhaka', isOpen: true, isApproved: true, deliveryTime: '20-30 min', deliveryFee: 1.99, minOrder: 8, menuCategories: ['Popular'] },
+  { id: '3', name: 'Sultan Dine', ownerId: 'o3', ownerName: 'Karim Hossain', cuisine: ['Mughlai', 'Biryani'], rating: 4.8, reviews: 2103, totalOrders: 2103, coverImage: '', logo: '', phone: '', address: 'Banani, Dhaka', isOpen: false, isApproved: true, deliveryTime: '25-35 min', deliveryFee: 2.49, minOrder: 10, menuCategories: ['Popular'] },
+  { id: '4', name: 'Green Leaf Café', ownerId: 'o4', ownerName: 'Nusrat Jahan', cuisine: ['Healthy', 'Vegan'], rating: 0, reviews: 0, totalOrders: 0, coverImage: '', logo: '', phone: '', address: 'Uttara, Dhaka', isOpen: false, isApproved: false, deliveryTime: '20-30 min', deliveryFee: 1.99, minOrder: 8, menuCategories: ['Popular'] },
+  { id: '5', name: 'The Grill House', ownerId: 'o5', ownerName: 'Rahim Uddin', cuisine: ['BBQ', 'Grills'], rating: 0, reviews: 0, totalOrders: 0, coverImage: '', logo: '', phone: '', address: 'Mirpur, Dhaka', isOpen: false, isApproved: false, deliveryTime: '20-30 min', deliveryFee: 1.49, minOrder: 6, menuCategories: ['Popular'] },
 ];
 
 const AdminRestaurantsScreen: React.FC = () => {
   const navigation = useNavigation();
-  const [restaurants, setRestaurants] = useState<MockRestaurant[]>(MOCK_RESTAURANTS);
+  const { showPopup } = useNotifications();
+  const [confirmRestaurant, setConfirmRestaurant] = useState<{ id: string; name: string } | null>(null);
+
+  const rsState = useApiData(adminFetchAllRestaurants, DUMMY_RESTAURANTS);
+  const restaurants = rsState.status !== 'loading' ? rsState.data : DUMMY_RESTAURANTS;
+  const status = rsState.status;
+  const reload = rsState.reload;
+
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading restaurants…" color={Colors.adminAccent} />;
+  }
+
+  // Refresh whenever the screen regains focus (e.g. after seller registers a restaurant)
+  useFocusEffect(
+    React.useCallback(() => { reload(); }, [reload]),
+  );
 
   const handleApprove = (id: string, name: string) => {
-    Alert.alert(
-      'Approve Restaurant',
-      `Are you sure you want to approve "${name}"?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Approve',
-          onPress: () =>
-            setRestaurants((prev) =>
-              prev.map((r) => (r.id === id ? { ...r, isApproved: true } : r))
-            ),
-        },
-      ]
-    );
+    setConfirmRestaurant({ id, name });
+  };
+
+  const doApprove = async () => {
+    if (!confirmRestaurant) return;
+    try {
+      await adminApproveRestaurant(confirmRestaurant.id);
+      reload();
+      showPopup({ title: 'Restaurant Approved ✅', message: `"${confirmRestaurant.name}" is now live.`, variant: 'success', autoDismissMs: 2500 });
+    } catch {
+      showPopup({ title: 'Offline', message: 'Could not reach backend — changes were not saved.', variant: 'warning' });
+    } finally {
+      setConfirmRestaurant(null);
+    }
   };
 
   const handleView = (name: string) => {
-    Alert.alert(name, 'Restaurant details would open here.', [{ text: 'OK' }]);
+    showPopup({ title: name, message: 'Full restaurant details will open here in a future update.', variant: 'info', autoDismissMs: 3000 });
   };
 
-  const renderRestaurant = ({ item }: { item: MockRestaurant }) => (
+  const renderRestaurant = ({ item }: { item: Restaurant }) => (
     <View style={styles.card}>
       {/* Icon + Info */}
       <View style={styles.cardTop}>
@@ -119,19 +98,19 @@ const AdminRestaurantsScreen: React.FC = () => {
             </View>
           </View>
 
-          <Text style={styles.cuisine}>{item.cuisine}</Text>
+          <Text style={styles.cuisine}>{item.cuisine.join(', ')}</Text>
 
           <View style={styles.metaRow}>
             {item.isApproved ? (
               <>
                 <View style={styles.metaItem}>
                   <Ionicons name="star" size={13} color={Colors.warning} />
-                  <Text style={styles.metaText}>{item.rating}</Text>
+                  <Text style={styles.metaText}>{item.rating ?? 0}</Text>
                 </View>
                 <View style={styles.metaDivider} />
                 <View style={styles.metaItem}>
                   <Ionicons name="receipt-outline" size={13} color={Colors.gray} />
-                  <Text style={styles.metaText}>{item.orderCount.toLocaleString()} orders</Text>
+                  <Text style={styles.metaText}>{(item.totalOrders ?? 0).toLocaleString()} orders</Text>
                 </View>
               </>
             ) : (
@@ -179,8 +158,17 @@ const AdminRestaurantsScreen: React.FC = () => {
           <Ionicons name="arrow-back" size={22} color={Colors.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Restaurants</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity style={styles.backBtn} onPress={reload} activeOpacity={0.8}>
+          <Ionicons name="refresh-outline" size={20} color={Colors.black} />
+        </TouchableOpacity>
       </View>
+
+      {status === 'fallback' && (
+        <View style={styles.fallbackBanner}>
+          <Ionicons name="cloud-offline-outline" size={13} color={Colors.warning} />
+          <Text style={styles.fallbackText}>Dummy data mode · backend offline — showing sample restaurants</Text>
+        </View>
+      )}
 
       {/* Summary Bar */}
       <View style={styles.summaryBar}>
@@ -211,6 +199,16 @@ const AdminRestaurantsScreen: React.FC = () => {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
+      <ConfirmModal
+        visible={!!confirmRestaurant}
+        title="Approve Restaurant"
+        message={`Approve "${confirmRestaurant?.name}" so customers can see and order from it?`}
+        confirmText="Approve"
+        cancelText="Cancel"
+        variant="info"
+        onConfirm={doApprove}
+        onCancel={() => setConfirmRestaurant(null)}
+      />
     </SafeAreaView>
   );
 };
@@ -238,6 +236,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: { fontSize: 17, fontWeight: '800', color: Colors.black },
+  fallbackBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#FFF8E1', paddingHorizontal: 16, paddingVertical: 8,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  fallbackText: { fontSize: 11, color: Colors.warning, fontWeight: '700', flex: 1 },
 
   // Summary
   summaryBar: {

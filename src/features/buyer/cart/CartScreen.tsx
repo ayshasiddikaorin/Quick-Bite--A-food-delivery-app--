@@ -7,12 +7,11 @@ import {
   TouchableOpacity,
   StatusBar,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
-// Alert kept for clear-cart confirmation; ActivityIndicator for loading state
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useNotifications } from '../../../context/NotificationContext';
 
 import CartHeader from './CartHeader';
 import CartItemCard from './CartItem';
@@ -21,10 +20,8 @@ import OrderSummary from '../../../components/OrderSummary';
 import EmptyCart from './EmptyCart';
 
 import type { CartItem } from '../../../models';
-import { cartItems as seedData } from '../../../data/cartData';
 import {
   getCart,
-  saveCart,
   clearCart,
   increaseQuantity,
   decreaseQuantity,
@@ -45,32 +42,17 @@ const PROMO_CODES: Record<string, number> = {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 const CartScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const { showPopup } = useNotifications();
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // ── Load cart from AsyncStorage; seed dummy data on first launch ───────────
+  // ── Load cart from AsyncStorage ───────────────────────────────────────────
   useEffect(() => {
     (async () => {
       const stored = await getCart();
-      if (stored.length === 0) {
-        // First launch: seed with dummy data and persist
-        // Map seedData to match CartItem type from types/index
-        const mapped: CartItem[] = seedData.map((item) => ({
-          id: item.id,
-          name: item.name,
-          restaurant: item.restaurant,
-          image: item.image,
-          rating: item.rating,
-          price: item.price,
-          quantity: item.quantity,
-        }));
-        await saveCart(mapped);
-        setCart(mapped);
-      } else {
-        setCart(stored);
-      }
+      setCart(stored);
       setLoading(false);
     })();
   }, []);
@@ -104,45 +86,51 @@ const CartScreen: React.FC = () => {
   }, [refreshCart]);
 
   const handleClearAll = useCallback(() => {
-    Alert.alert(
-      'Clear Cart',
-      'Remove all items from your cart?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: async () => {
-            await clearCart();
-            setCart([]);
-            setDiscountPercent(0);
-          },
-        },
-      ]
-    );
-  }, []);
+    showPopup({
+      title: 'Clear Cart',
+      message: 'Are you sure you want to remove all items from your cart?',
+      variant: 'warning',
+      confirmText: 'Yes, Clear All',
+      cancelText: 'Cancel',
+      showCancel: true,
+      onConfirm: async () => {
+        await clearCart();
+        setCart([]);
+        setDiscountPercent(0);
+      },
+    });
+  }, [showPopup]);
 
   const handleApplyPromo = useCallback((code: string) => {
     const trimmed = code.trim().toUpperCase();
     const percent = PROMO_CODES[trimmed];
     if (percent) {
       setDiscountPercent(percent);
-      Alert.alert('Promo Applied! 🎉', `${percent}% discount has been applied.`);
+      showPopup({
+        title: 'Promo Applied! 🎉',
+        message: `${percent}% discount has been applied to your order.`,
+        variant: 'success',
+        confirmText: 'Awesome',
+      });
     } else {
-      Alert.alert('Invalid Code', 'This promo code is not valid. Try FOODI10 or SAVE15.');
+      showPopup({
+        title: 'Invalid Promo Code',
+        message: 'This promo code is not valid. Try using FOODI10 or SAVE15.',
+        variant: 'error',
+        confirmText: 'Try Again',
+      });
     }
-  }, []);
-
-  const handleCheckout = useCallback(() => {
-    navigation.navigate('Checkout', { subtotal, discount: discountAmount, tax });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subtotal, discountAmount, tax]);
+  }, [showPopup]);
 
   // ── Calculations ──────────────────────────────────────────────────────────
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discountAmount = parseFloat(((subtotal * discountPercent) / 100).toFixed(2));
   const tax = parseFloat(((subtotal - discountAmount) * TAX_RATE).toFixed(2));
   const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
+
+  const handleCheckout = useCallback(() => {
+    navigation.navigate('Checkout', { subtotal, discount: discountAmount, tax });
+  }, [subtotal, discountAmount, tax]);
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {

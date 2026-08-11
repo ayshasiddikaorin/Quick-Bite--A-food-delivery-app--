@@ -10,6 +10,7 @@ import type { AuthUser, UserRole } from '../models';
 import type { RegisterRequest } from '../models/auth';
 import { loginRequest, registerRequest } from '../services/authService';
 import { fetchMyProfile, updateMyProfile } from '../services/userService';
+import { ensureRiderProfile } from '../services/riderService';
 import { getStoredAuth, saveAuth, clearAuth } from '../storage/authStorage';
 
 // ─── Context shape ────────────────────────────────────────────────────────────
@@ -68,6 +69,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken]     = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // A rider's profile is created lazily on the backend. Ensure it exists after
+  // login/registration so /riders/profile and /riders/stats never 404 and force
+  // the app into dummy-data fallback (which triggers "profile not found" warnings).
+  const ensureRiderProfileSync = useCallback(async (authUser: AuthUser) => {
+    if (authUser.role !== 'rider') return;
+    try {
+      await ensureRiderProfile();
+    } catch {
+      // non-fatal — backend may be unreachable; screens fall back gracefully
+    }
+  }, []);
+
   // Restore persisted session on app start, then silently refresh from backend
   useEffect(() => {
     const bootstrap = async () => {
@@ -83,8 +96,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const fresh = await fetchMyProfile();
             setUser(fresh);
             await saveAuth({ token: stored.token, user: fresh });
+            void ensureRiderProfileSync(fresh);
           } catch {
             // network unavailable — cached user is fine
+            void ensureRiderProfileSync(stored.user);
           }
         }
       } finally {
@@ -102,8 +117,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(authUser);
       setToken(response.usertoken);
       await saveAuth({ token: response.usertoken, user: authUser });
+      void ensureRiderProfileSync(authUser);
     },
-    [],
+    [ensureRiderProfileSync],
   );
 
   // ── Register ───────────────────────────────────────────────────────────────
@@ -113,7 +129,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(authUser);
     setToken(response.usertoken);
     await saveAuth({ token: response.usertoken, user: authUser });
-  }, []);
+    void ensureRiderProfileSync(authUser);
+  }, [ensureRiderProfileSync]);
 
   // ── Logout ─────────────────────────────────────────────────────────────────
   const logout = useCallback(async () => {

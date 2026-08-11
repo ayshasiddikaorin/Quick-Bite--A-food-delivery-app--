@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Colors from '../../../constants/colors';
 import { useAuth } from '../../../context/AuthContext';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
 import type { AdminStackParamList } from '../../../navigation/AdminNavigator';
 import type { UserRole, AdminStats } from '../../../models';
 import { useApiData } from '../../../hooks/useApiData';
@@ -29,6 +29,8 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 // ── Dummy fallback stats ──────────────────────────────────────────────────────
 const DUMMY_STATS: AdminStats = {
   totalUsers: 1284,
+  totalBuyers: 890,
+  totalSellers: 161,
   totalRestaurants: 96,
   totalRiders: 143,
   totalOrders: 8472,
@@ -36,7 +38,7 @@ const DUMMY_STATS: AdminStats = {
   pendingOrders: 1185,
   cancelledOrders: 508,
   onDeliveryOrders: 1018,
-  totalRevenue: 0,
+  totalRevenue: 428500,
   weeklyOrderData: [120, 145, 98, 167, 134, 189, 156],
 };
 
@@ -125,8 +127,10 @@ const AdminDashboardScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const [showLogout, setShowLogout] = useState(false);
 
-  const { status, data: stats, reload } = useApiData<AdminStats>(fetchAdminStats, DUMMY_STATS);
-  const s = status !== 'loading' ? stats : DUMMY_STATS;
+  const statsState = useApiData<AdminStats>(fetchAdminStats, DUMMY_STATS);
+  const status = statsState.status;
+  const reload = statsState.reload;
+  const s = statsState.status !== 'loading' ? statsState.data : DUMMY_STATS;
 
   const barData  = s.weeklyOrderData ?? DUMMY_STATS.weeklyOrderData;
   const maxVal   = Math.max(...barData, 1);
@@ -139,6 +143,10 @@ const AdminDashboardScreen: React.FC = () => {
     { label: 'Cancelled',   percent: Math.round((s.cancelledOrders  / total) * 100), color: Colors.error       },
   ];
 
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading platform stats…" color={Colors.adminAccent} />;
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
@@ -150,9 +158,7 @@ const AdminDashboardScreen: React.FC = () => {
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity style={styles.iconBtn} onPress={reload}>
-            {status === 'loading'
-              ? <ActivityIndicator size="small" color={Colors.primary} />
-              : <Ionicons name="refresh-outline" size={20} color={Colors.black} />}
+            <Ionicons name="refresh-outline" size={20} color={Colors.black} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.logoutBtn} onPress={() => setShowLogout(true)} activeOpacity={0.8}>
             <Ionicons name="log-out-outline" size={20} color={Colors.error} />

@@ -20,9 +20,11 @@ import Colors from '../../../constants/colors';
 import { restaurants as dummyRestaurants } from '../../../data/dummyData';
 import { RestaurantMenuItem, CartItem, RestaurantData } from '../../../models';
 import { getCart, saveCart } from '../../../storage/cartStorage';
+import { isFavorite, toggleFavorite } from '../../../storage/favoritesStorage';
 import { fetchRestaurantById } from '../../../services/restaurantService';
 import { fetchMenuByRestaurant } from '../../../services/menuService';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
+import { safeImageUri } from '../../../utils/image';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 type RouteProps = RouteProp<BuyerStackParamList, 'RestaurantPage'>;
@@ -45,7 +47,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, offerDiscount, onAdd,
 
   return (
     <View style={cardStyles.card}>
-      <Image source={{ uri: item.image }} style={cardStyles.image} />
+      <Image source={{ uri: safeImageUri(item.image) }} style={cardStyles.image} />
       {item.isPopular && (
         <View style={cardStyles.popularBadge}>
           <MaterialIcons name="local-fire-department" size={11} color={Colors.white} />
@@ -161,8 +163,8 @@ const RestaurantScreen: React.FC = () => {
         ]);
         if (!cancelled) {
           // Merge API menu into restaurant shape
-          setRestaurant({ ...r, menu: m.length ? m : r.menu });
-          setMenu(m.length ? m : r.menu);
+          setRestaurant({ ...r, menu: m });
+          setMenu(m);
           setFromFallback(false);
         }
       } catch {
@@ -179,6 +181,21 @@ const RestaurantScreen: React.FC = () => {
 
     return () => { cancelled = true; clearTimeout(timeout); };
   }, [restaurantId]);
+
+  // Read persisted favorite state for this restaurant
+  useEffect(() => {
+    let cancelled = false;
+    isFavorite(restaurantId).then((fav) => {
+      if (!cancelled) setIsFav(fav);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [restaurantId]);
+
+  const handleToggleFav = async () => {
+    if (!restaurant) return;
+    const updated = await toggleFavorite(restaurant);
+    setIsFav(updated.some((r) => r.id === restaurant.id));
+  };
 
   const headerOpacity = scrollY.interpolate({
     inputRange: [HEADER_THRESHOLD - 40, HEADER_THRESHOLD],
@@ -217,8 +234,10 @@ const RestaurantScreen: React.FC = () => {
           const realItem = menu.find((m) => m.id === realId)!;
           cart.push({
             id: `${restaurantId}_${realId}`,
+            menuItemId: realId,
+            restaurantId,
+            restaurantName: restaurant.name,
             name: realItem.name,
-            restaurant: restaurant.name,
             image: realItem.image,
             rating: restaurant.rating,
             price: menuItem.price,
@@ -271,7 +290,7 @@ const RestaurantScreen: React.FC = () => {
         <TouchableOpacity style={styles.circleBtn} onPress={() => navigation.goBack()} activeOpacity={0.85}>
           <Ionicons name="arrow-back" size={20} color={Colors.black} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.circleBtn} onPress={() => setIsFav((v) => !v)} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.circleBtn} onPress={handleToggleFav} activeOpacity={0.85}>
           <Ionicons name={isFav ? 'heart' : 'heart-outline'} size={20} color={isFav ? Colors.badge : Colors.black} />
         </TouchableOpacity>
       </SafeAreaView>
@@ -283,7 +302,7 @@ const RestaurantScreen: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
       >
         <Animated.View style={[styles.coverWrapper, { transform: [{ translateY: coverTranslate }] }]}>
-          <Image source={{ uri: restaurant.coverImage }} style={styles.coverImage} />
+          <Image source={{ uri: safeImageUri(restaurant.coverImage) }} style={styles.coverImage} />
           <View style={styles.coverOverlay} />
         </Animated.View>
 
@@ -425,7 +444,7 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 120 },
   coverWrapper: { height: COVER_HEIGHT, width: W },
   coverImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  coverOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.25)' },
+  coverOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.25)' },
   infoCard: {
     backgroundColor: Colors.white, borderTopLeftRadius: 28, borderTopRightRadius: 28,
     marginTop: -28, padding: 20,

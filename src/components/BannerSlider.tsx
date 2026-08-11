@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { BannerItem } from '../models';
 import Colors from '../constants/colors';
+import { safeImageUri } from '../utils/image';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const BANNER_WIDTH = SCREEN_WIDTH - 40;
@@ -64,7 +65,7 @@ const BannerSlider: React.FC<Props> = ({ banners }) => {
         scrollEventThrottle={16}
         renderItem={({ item }) => (
           <TouchableOpacity activeOpacity={0.95} style={styles.bannerCard}>
-            <Image source={{ uri: item.image }} style={styles.bannerImage} />
+            <Image source={{ uri: safeImageUri(item.image) }} style={styles.bannerImage} />
             {/* Overlay */}
             <View style={styles.overlay} />
             {/* Text Content */}

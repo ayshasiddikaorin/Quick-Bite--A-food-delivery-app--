@@ -6,7 +6,6 @@ import {
   StyleSheet,
   StatusBar,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +16,7 @@ import Colors from '../../constants/colors';
 import InputField from '../../components/shared/InputField';
 import PrimaryButton from '../../components/shared/PrimaryButton';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { UserRole } from '../../models';
 
@@ -46,6 +46,7 @@ const RegisterScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteProps>();
   const { register } = useAuth();
+  const { showPopup } = useNotifications();
 
   const role: UserRole = route.params?.role ?? 'buyer';
   const cfg = ROLE_CONFIG[role];
@@ -99,10 +100,11 @@ const RegisterScreen: React.FC = () => {
         vehicleType: form.vehicleType.trim() || undefined,
       });
     } catch (error: any) {
-      Alert.alert(
-        'Registration Failed',
-        error?.message ?? 'Something went wrong. Please try again.'
-      );
+      showPopup({
+        title: 'Registration Failed',
+        message: error?.message ?? 'Could not create account. Please try again.',
+        variant: 'error',
+      });
     } finally {
       setLoading(false);
     }

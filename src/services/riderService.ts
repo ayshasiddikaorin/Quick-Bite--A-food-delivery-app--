@@ -1,13 +1,12 @@
+/**
+ * riderService.ts
+ * ───────────────
+ * All rider-related API calls.
+ */
 import { apiRequest } from './apiClient';
-import type { Rider } from '../models';
-
-export interface RiderStats {
-  newRequests: number;
-  activeDeliveries: number;
-  todayIncome: number;
-  weeklyData: number[];
-  isOnline: boolean;
-}
+import type { Rider } from '../models/rider';
+import type { Order } from '../models/order';
+import type { RiderStats } from '../models/dashboard';
 
 export interface RiderEarnings {
   todayEarnings: number;
@@ -16,32 +15,35 @@ export interface RiderEarnings {
   totalDeliveries: number;
 }
 
-/** Rider: ensure profile exists (call on first login) */
+/**
+ * Idempotent — creates a rider profile if one doesn't exist yet.
+ * Call once after the rider's first login.
+ */
 export function ensureRiderProfile(): Promise<Rider> {
   return apiRequest<Rider>('/riders/profile/ensure', { method: 'POST' }, true);
 }
 
-/** Rider: get own profile */
+/** Get the logged-in rider's full profile. */
 export function fetchRiderProfile(): Promise<Rider> {
   return apiRequest<Rider>('/riders/profile', {}, true);
 }
 
-/** Rider: toggle online/offline */
+/** Toggle the rider's online / offline status. */
 export function toggleOnline(): Promise<Rider> {
   return apiRequest<Rider>('/riders/profile/toggle-online', { method: 'PATCH' }, true);
 }
 
-/** Rider: get delivery history */
-export function fetchDeliveryHistory(): Promise<object[]> {
-  return apiRequest<object[]>('/riders/delivery-history', {}, true);
+/** Get the rider's completed delivery history. */
+export function fetchDeliveryHistory(): Promise<Order[]> {
+  return apiRequest<Order[]>('/riders/delivery-history', {}, true);
 }
 
-/** Rider: get earnings summary */
+/** Get earnings breakdown (today, weekly, total, deliveries count). */
 export function fetchEarnings(): Promise<RiderEarnings> {
   return apiRequest<RiderEarnings>('/riders/earnings', {}, true);
 }
 
-/** Rider: get dashboard stats */
+/** Get dashboard stats (new requests, active deliveries, today's income). */
 export function fetchRiderStats(): Promise<RiderStats> {
   return apiRequest<RiderStats>('/riders/stats', {}, true);
 }

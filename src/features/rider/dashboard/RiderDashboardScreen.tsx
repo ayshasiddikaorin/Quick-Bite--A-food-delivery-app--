@@ -11,16 +11,17 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Colors from '../../../constants/colors';
 import { useAuth } from '../../../context/AuthContext';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
 import type { RiderStackParamList } from '../../../navigation/RiderNavigator';
 import { useApiData } from '../../../hooks/useApiData';
 import { fetchRiderStats, toggleOnline } from '../../../services/riderService';
-import type { RiderStats } from '../../../services/riderService';
+import type { RiderStats } from '../../../models/dashboard';
 
 type NavProp = NativeStackNavigationProp<RiderStackParamList>;
 const { width: W } = Dimensions.get('window');
@@ -58,11 +59,11 @@ const statStyles = StyleSheet.create({
   label: { fontSize: 12, color: Colors.gray, fontWeight: '600' },
 });
 
-const QUICK_ACTIONS = [
-  { label: 'View Requests',    icon: 'list-outline'    as const, screen: 'RiderRequests'        as const },
-  { label: 'Delivery History', icon: 'time-outline'    as const, screen: 'RiderDeliveryHistory' as const },
-  { label: 'Earnings',         icon: 'cash-outline'    as const, screen: 'RiderEarnings'        as const },
-  { label: 'Active Delivery',  icon: 'bicycle-outline' as const, screen: 'RiderRequests'        as const },
+const QUICK_ACTIONS: { label: string; icon: keyof typeof Ionicons.glyphMap; screen: 'RiderRequests' | 'RiderDeliveryHistory' | 'RiderEarnings' | 'RiderActiveDeliveries'; badgeKey?: 'newRequests' | 'activeDeliveries' }[] = [
+  { label: 'New Requests',    icon: 'list-outline'    as const, screen: 'RiderRequests'         as const, badgeKey: 'newRequests' },
+  { label: 'Delivery History', icon: 'time-outline'    as const, screen: 'RiderDeliveryHistory'  as const },
+  { label: 'Earnings',         icon: 'cash-outline'    as const, screen: 'RiderEarnings'         as const },
+  { label: 'Active Delivery',  icon: 'bicycle-outline' as const, screen: 'RiderActiveDeliveries' as const, badgeKey: 'activeDeliveries' },
 ];
 
 const RiderDashboardScreen: React.FC = () => {
@@ -73,6 +74,11 @@ const RiderDashboardScreen: React.FC = () => {
 
   const { status, data: stats, reload } = useApiData<RiderStats>(fetchRiderStats, DUMMY_STATS);
   const s = status !== 'loading' ? stats : DUMMY_STATS;
+
+  // Refresh whenever the screen regains focus
+  useFocusEffect(
+    React.useCallback(() => { reload(); }, [reload]),
+  );
 
   const [isOnline, setIsOnline] = useState(s.isOnline);
 
@@ -94,6 +100,10 @@ const RiderDashboardScreen: React.FC = () => {
   const maxVal  = Math.max(...barData, 1);
   const weeklyTotal = barData.reduce((a, b) => a + b, 0);
 
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading your dashboard…" color={Colors.riderAccent} />;
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
@@ -105,9 +115,7 @@ const RiderDashboardScreen: React.FC = () => {
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity style={styles.refreshBtn} onPress={reload}>
-            {status === 'loading'
-              ? <ActivityIndicator size="small" color={Colors.primary} />
-              : <Ionicons name="refresh-outline" size={18} color={Colors.black} />}
+            <Ionicons name="refresh-outline" size={18} color={Colors.black} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.logoutBtn} onPress={() => setShowLogout(true)} activeOpacity={0.8}>
             <Ionicons name="log-out-outline" size={20} color={Colors.error} />
@@ -172,6 +180,11 @@ const RiderDashboardScreen: React.FC = () => {
                 <Ionicons name={action.icon} size={24} color={Colors.riderAccent} />
               </View>
               <Text style={styles.actionLabel}>{action.label}</Text>
+              {action.badgeKey && s[action.badgeKey] > 0 && (
+                <View style={styles.actionBadge}>
+                  <Text style={styles.actionBadgeText}>{s[action.badgeKey]}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           ))}
         </View>
@@ -246,7 +259,15 @@ const styles = StyleSheet.create({
   actionCard: {
     width: (W - 52) / 2, backgroundColor: Colors.white, borderRadius: 18, padding: 18, alignItems: 'center', gap: 10,
     shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.06, shadowRadius: 10, elevation: 3,
+    position: 'relative',
   },
+  actionBadge: {
+    position: 'absolute', top: 8, right: 8,
+    minWidth: 20, height: 20, borderRadius: 10,
+    backgroundColor: Colors.riderAccent, alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  actionBadgeText: { color: Colors.white, fontSize: 11, fontWeight: '800' },
   actionIcon: { width: 52, height: 52, borderRadius: 16, backgroundColor: Colors.infoLight, alignItems: 'center', justifyContent: 'center' },
   actionLabel: { fontSize: 13, fontWeight: '700', color: Colors.black, textAlign: 'center' },
   chartCard: {

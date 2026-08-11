@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Colors from '../../../constants/colors';
 import { useAuth } from '../../../context/AuthContext';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
+import { useApiData } from '../../../hooks/useApiData';
+import { fetchSellerStats } from '../../../services/orderService';
+import { fetchMyRestaurant, toggleRestaurantOpen } from '../../../services/restaurantService';
+import { ApiError } from '../../../services/apiClient';
+import type { SellerStats, Restaurant } from '../../../models';
 import type { SellerStackParamList } from '../../../navigation/SellerNavigator';
 
 type NavProp = NativeStackNavigationProp<SellerStackParamList>;
@@ -23,9 +30,15 @@ type NavProp = NativeStackNavigationProp<SellerStackParamList>;
 const { width: W } = Dimensions.get('window');
 
 // Mini bar chart
-const BAR_DATA = [42, 68, 55, 80, 73, 90, 65];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const MAX_VAL = Math.max(...BAR_DATA);
+
+const EMPTY_STATS: SellerStats = {
+  newOrders: 0,
+  preparing: 0,
+  completed: 0,
+  totalSales: 0,
+  weeklyData: [0, 0, 0, 0, 0, 0, 0],
+};
 
 interface StatCardProps {
   label: string;
@@ -70,6 +83,54 @@ const SellerDashboardScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const [showLogout, setShowLogout] = useState(false);
 
+  // Restaurant presence gate — new sellers (no restaurant yet) are sent to
+  // Restaurant Setup instead of a dashboard full of nothing.
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [gateChecked, setGateChecked] = useState(false);
+  const [togglingOpen, setTogglingOpen] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const r = await fetchMyRestaurant();
+        if (mounted) setRestaurant(r);
+      } catch (err: unknown) {
+        if (mounted && err instanceof ApiError && err.status === 404) {
+          navigation.replace('SellerRestaurantSetup');
+          return;
+        }
+        // Backend unreachable — stay on the dashboard with an offline notice.
+      } finally {
+        if (mounted) setGateChecked(true);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [navigation]);
+
+  const statsState = useApiData<SellerStats>(fetchSellerStats, EMPTY_STATS);
+  const status = statsState.status;
+  const stats = statsState.status !== 'loading' ? statsState.data : EMPTY_STATS;
+  const reload = statsState.reload;
+  const barData = stats.weeklyData.length === 7 ? stats.weeklyData : EMPTY_STATS.weeklyData;
+  const barMax = Math.max(...barData, 1);
+  const weeklyTotal = barData.reduce((s, v) => s + v, 0);
+
+  const isOpen = restaurant?.isOpen ?? true;
+
+  if (status === 'loading' && !restaurant) {
+    return <LoadingScreen label="Loading your dashboard…" color={Colors.sellerAccent} />;
+  }
+
+  const toggleOpen = async () => {
+    setTogglingOpen(true);
+    try {
+      const updated = await toggleRestaurantOpen();
+      setRestaurant(updated);
+    } catch { /* backend unreachable — keep current state */ }
+    finally { setTogglingOpen(false); }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
@@ -80,49 +141,72 @@ const SellerDashboardScreen: React.FC = () => {
           <Text style={styles.greeting}>Good morning,</Text>
           <Text style={styles.name}>{user?.restaurantName ?? user?.name} 👨‍🍳</Text>
         </View>
-        <TouchableOpacity style={styles.logoutBtn} onPress={() => setShowLogout(true)}>
-          <Ionicons name="log-out-outline" size={20} color={Colors.error} />
-        </TouchableOpacity>
+        <View style={styles.topActions}>
+          <TouchableOpacity onPress={reload} style={styles.refreshBtn}>
+            {status === 'loading'
+              ? <ActivityIndicator size="small" color={Colors.primary} />
+              : <Ionicons name="refresh-outline" size={20} color={Colors.black} />}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.logoutBtn} onPress={() => setShowLogout(true)}>
+            <Ionicons name="log-out-outline" size={20} color={Colors.error} />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {status === 'fallback' && (
+        <View style={styles.fallbackBanner}>
+          <Ionicons name="cloud-offline-outline" size={13} color={Colors.warning} />
+          <Text style={styles.fallbackText}>Backend offline — live stats unavailable</Text>
+          <TouchableOpacity onPress={reload}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         {/* Open/Closed toggle */}
-        <View style={styles.statusRow}>
-          <View style={styles.statusDot} />
-          <Text style={styles.statusText}>Restaurant is Open</Text>
-          <TouchableOpacity style={styles.toggleBtn}>
-            <Text style={styles.toggleText}>Close Now</Text>
+        <View style={[styles.statusRow, !isOpen && styles.statusRowClosed]}>
+          <View style={[styles.statusDot, !isOpen && styles.statusDotClosed]} />
+          <Text style={[styles.statusText, !isOpen && styles.statusTextClosed]}>
+            {isOpen ? 'Restaurant is Open' : 'Restaurant is Closed'}
+          </Text>
+          <TouchableOpacity style={[styles.toggleBtn, !isOpen && styles.toggleBtnClosed]} onPress={toggleOpen} disabled={togglingOpen || !gateChecked}>
+            {togglingOpen ? (
+              <ActivityIndicator size="small" color={Colors.white} />
+            ) : (
+              <Text style={styles.toggleText}>{isOpen ? 'Close Now' : 'Open Now'}</Text>
+            )}
           </TouchableOpacity>
         </View>
 
         {/* Stat Cards */}
         <Text style={styles.sectionTitle}>Today's Overview</Text>
         <View style={styles.statsGrid}>
-          <StatCard label="New Orders" value={8} icon="receipt-outline" color="#FF6B00" bg="#FFF3EE" />
-          <StatCard label="Preparing" value={3} icon="restaurant-outline" color="#FF9800" bg="#FFF3E0" />
-          <StatCard label="Completed" value={24} icon="checkmark-circle-outline" color={Colors.success} bg={Colors.successLight} />
-          <StatCard label="Total Sales" value="৳4,280" icon="cash-outline" color={Colors.sellerAccent} bg={Colors.successLight} />
+          <StatCard label="New Orders" value={stats.newOrders} icon="receipt-outline" color="#FF6B00" bg="#FFF3EE" />
+          <StatCard label="Preparing" value={stats.preparing} icon="restaurant-outline" color="#FF9800" bg="#FFF3E0" />
+          <StatCard label="Completed" value={stats.completed} icon="checkmark-circle-outline" color={Colors.success} bg={Colors.successLight} />
+          <StatCard label="Total Sales" value={`৳${stats.totalSales.toLocaleString()}`} icon="cash-outline" color={Colors.sellerAccent} bg={Colors.successLight} />
         </View>
 
         {/* Weekly Chart */}
         <Text style={styles.sectionTitle}>Weekly Sales</Text>
         <View style={styles.chartCard}>
           <View style={styles.chartHeader}>
-            <Text style={styles.chartTotal}>৳28,540</Text>
+            <Text style={styles.chartTotal}>৳{weeklyTotal.toLocaleString()}</Text>
             <View style={styles.growthBadge}>
               <Ionicons name="trending-up" size={14} color={Colors.success} />
-              <Text style={styles.growthText}>+12.5%</Text>
+              <Text style={styles.growthText}>{weeklyTotal} orders</Text>
             </View>
           </View>
           <View style={styles.barsRow}>
-            {BAR_DATA.map((val, i) => (
+            {barData.map((val, i) => (
               <View key={i} style={styles.barCol}>
                 <View
                   style={[
                     styles.bar,
                     {
-                      height: (val / MAX_VAL) * 90,
-                      backgroundColor: i === 5 ? Colors.sellerAccent : Colors.successLight,
+                      height: (val / barMax) * 90,
+                      backgroundColor: i === new Date().getDay() ? Colors.sellerAccent : Colors.successLight,
                     },
                   ]}
                 />
@@ -136,7 +220,7 @@ const SellerDashboardScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsGrid}>
           {[
-            { label: 'Manage Orders', icon: 'list-outline' as const, screen: 'SellerOrders' as const },
+            { label: 'Manage Orders', icon: 'list-outline' as const, screen: 'SellerOrders' as const, badge: stats.newOrders },
             { label: 'Add Food', icon: 'add-circle-outline' as const, screen: 'SellerAddFood' as const },
             { label: 'Menu', icon: 'restaurant-outline' as const, screen: 'SellerMenu' as const },
             { label: 'Sales Report', icon: 'bar-chart-outline' as const, screen: 'SellerSales' as const },
@@ -151,6 +235,11 @@ const SellerDashboardScreen: React.FC = () => {
                 <Ionicons name={action.icon} size={24} color={Colors.sellerAccent} />
               </View>
               <Text style={styles.actionLabel}>{action.label}</Text>
+              {action.badge !== undefined && action.badge > 0 && (
+                <View style={styles.actionBadge}>
+                  <Text style={styles.actionBadgeText}>{action.badge}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           ))}
         </View>
@@ -194,6 +283,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  topActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  refreshBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: Colors.lightGray,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fallbackBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#FFF8E1', paddingHorizontal: 16, paddingVertical: 8,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  fallbackText: { fontSize: 11, color: Colors.warning, fontWeight: '700', flex: 1 },
+  retryText: { fontSize: 11, color: Colors.warning, fontWeight: '800', textDecorationLine: 'underline' },
   scroll: { padding: 20, paddingBottom: 40 },
   statusRow: {
     flexDirection: 'row',
@@ -205,14 +310,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     gap: 8,
   },
+  statusRowClosed: { backgroundColor: Colors.errorLight },
   statusDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: Colors.success },
+  statusDotClosed: { backgroundColor: Colors.error },
   statusText: { flex: 1, fontSize: 14, fontWeight: '600', color: Colors.success },
+  statusTextClosed: { color: Colors.error },
   toggleBtn: {
     backgroundColor: Colors.success,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
   },
+  toggleBtnClosed: { backgroundColor: Colors.error },
   toggleText: { color: Colors.white, fontSize: 12, fontWeight: '700' },
   sectionTitle: {
     fontSize: 16,
@@ -267,7 +376,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 10,
     elevation: 3,
+    position: 'relative',
   },
+  actionBadge: {
+    position: 'absolute', top: 8, right: 8,
+    minWidth: 20, height: 20, borderRadius: 10,
+    backgroundColor: Colors.sellerAccent, alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+  actionBadgeText: { color: Colors.white, fontSize: 11, fontWeight: '800' },
   actionIcon: {
     width: 52,
     height: 52,

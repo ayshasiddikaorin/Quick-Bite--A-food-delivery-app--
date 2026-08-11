@@ -6,32 +6,26 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import Colors from '../../../constants/colors';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
+import { useNotifications } from '../../../context/NotificationContext';
 import { useApiData } from '../../../hooks/useApiData';
-import { fetchSellerOrders, advanceOrderSeller } from '../../../services/orderService';
+import { fetchSellerOrders, advanceOrderSeller, cancelOrder, confirmRiderPickup } from '../../../services/orderService';
 import type { Order, OrderStatus } from '../../../models';
 
-// ── Dummy fallback ────────────────────────────────────────────────────────────
-const DUMMY_ORDERS: Order[] = [
-  { id: '#1042', customerId: 'c1', customerName: 'Aysha S.',   restaurantId: 'r1', restaurantName: 'My Restaurant', items: [], subtotal: 580, deliveryFee: 0, total: 580, status: 'pending',   address: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: '#1041', customerId: 'c2', customerName: 'Karim H.',   restaurantId: 'r1', restaurantName: 'My Restaurant', items: [], subtotal: 420, deliveryFee: 0, total: 420, status: 'pending',   address: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: '#1040', customerId: 'c3', customerName: 'Rina B.',    restaurantId: 'r1', restaurantName: 'My Restaurant', items: [], subtotal: 350, deliveryFee: 0, total: 350, status: 'preparing', address: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: '#1039', customerId: 'c4', customerName: 'Rafi M.',    restaurantId: 'r1', restaurantName: 'My Restaurant', items: [], subtotal: 620, deliveryFee: 0, total: 620, status: 'preparing', address: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-  { id: '#1038', customerId: 'c5', customerName: 'Sara K.',    restaurantId: 'r1', restaurantName: 'My Restaurant', items: [], subtotal: 390, deliveryFee: 0, total: 390, status: 'delivered', address: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
-];
+const EMPTY_ORDERS: Order[] = [];
 
 type TabKey = 'new' | 'preparing' | 'completed';
 
 const STATUS_MAP: Record<TabKey, OrderStatus[]> = {
   new:       ['pending', 'confirmed'],
-  preparing: ['preparing', 'ready'],
+  preparing: ['preparing', 'ready', 'assigned'],
   completed: ['delivered', 'cancelled'],
 };
 
@@ -43,12 +37,20 @@ const TABS: { key: TabKey; label: string; color: string }[] = [
 
 const SellerOrdersScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { showPopup } = useNotifications();
   const [activeTab, setActiveTab]     = useState<TabKey>('new');
   const [confirmId, setConfirmId]     = useState<string | null>(null);
+  const [pickupId, setPickupId]       = useState<string | null>(null);
+  const [rejectId, setRejectId]       = useState<string | null>(null);
   const [advancing, setAdvancing]     = useState(false);
 
-  const { status, data: orders, reload } = useApiData<Order[]>(fetchSellerOrders, DUMMY_ORDERS);
-  const liveOrders = status !== 'loading' ? orders : DUMMY_ORDERS;
+  const { status, data: orders, reload } = useApiData<Order[]>(fetchSellerOrders, EMPTY_ORDERS);
+  const liveOrders = status !== 'loading' ? orders : EMPTY_ORDERS;
+
+  // Refresh whenever the screen regains focus (e.g. after a new order arrives)
+  useFocusEffect(
+    React.useCallback(() => { reload(); }, [reload]),
+  );
 
   const filtered = liveOrders.filter((o) => STATUS_MAP[activeTab].includes(o.status));
   const tabCfg   = TABS.find((t) => t.key === activeTab)!;
@@ -63,10 +65,56 @@ const SellerOrdersScreen: React.FC = () => {
     finally { setAdvancing(false); setConfirmId(null); }
   }, [confirmId, reload]);
 
+  const handleReject = useCallback(async () => {
+    if (!rejectId) return;
+    setAdvancing(true);
+    try {
+      await cancelOrder(rejectId);
+      reload();
+    } catch (err: unknown) {
+      showPopup({
+        title: 'Could Not Decline',
+        message: `${err instanceof Error ? err.message : 'Something went wrong'}.`,
+        variant: 'error',
+      });
+    } finally {
+      setAdvancing(false);
+      setRejectId(null);
+    }
+  }, [rejectId, reload, showPopup]);
+
+  const handlePickup = useCallback(async () => {
+    if (!pickupId) return;
+    setAdvancing(true);
+    try {
+      await confirmRiderPickup(pickupId);
+      showPopup({
+        title: 'Pickup Confirmed',
+        message: 'The rider is on their way to the customer.',
+        variant: 'success',
+        autoDismissMs: 3000,
+      });
+      reload();
+    } catch (err: unknown) {
+      showPopup({
+        title: 'Could Not Confirm Pickup',
+        message: `${err instanceof Error ? err.message : 'Something went wrong'}.`,
+        variant: 'error',
+      });
+    } finally {
+      setAdvancing(false);
+      setPickupId(null);
+    }
+  }, [pickupId, reload, showPopup]);
+
   const formatTime = (iso: string) => {
     const diff = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
     return diff < 60 ? `${diff} min ago` : `${Math.floor(diff / 60)}h ago`;
   };
+
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading your orders…" color={Colors.sellerAccent} />;
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -78,16 +126,14 @@ const SellerOrdersScreen: React.FC = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Order Management</Text>
         <TouchableOpacity onPress={reload} style={styles.backBtn}>
-          {status === 'loading'
-            ? <ActivityIndicator size="small" color={Colors.primary} />
-            : <Ionicons name="refresh-outline" size={20} color={Colors.black} />}
+          <Ionicons name="refresh-outline" size={20} color={Colors.black} />
         </TouchableOpacity>
       </View>
 
       {status === 'fallback' && (
         <View style={styles.fallbackBanner}>
           <Ionicons name="wifi-outline" size={13} color={Colors.warning} />
-          <Text style={styles.fallbackText}>Offline preview · tap refresh to load live orders</Text>
+          <Text style={styles.fallbackText}>Backend offline · live orders unavailable</Text>
         </View>
       )}
 
@@ -134,22 +180,37 @@ const SellerOrdersScreen: React.FC = () => {
             </Text>
             <View style={styles.orderBottom}>
               <Text style={styles.orderTotal}>৳{item.total.toFixed(0)}</Text>
-              {activeTab === 'new' && (
-                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: tabCfg.color }]} onPress={() => setConfirmId(item.id)}>
-                  <Text style={styles.actionText}>Accept</Text>
-                </TouchableOpacity>
-              )}
-              {activeTab === 'preparing' && (
-                <TouchableOpacity style={[styles.actionBtn, { backgroundColor: Colors.warning }]} onPress={() => setConfirmId(item.id)}>
-                  <Text style={styles.actionText}>Mark Ready</Text>
-                </TouchableOpacity>
-              )}
-              {activeTab === 'completed' && (
-                <View style={styles.doneBadge}>
-                  <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
-                  <Text style={[styles.actionText, { color: Colors.success }]}>Done</Text>
-                </View>
-              )}
+              <View style={styles.actionsRow}>
+                {activeTab === 'new' && item.status === 'pending' && (
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: Colors.error }]}
+                    onPress={() => setRejectId(item.id)}
+                  >
+                    <Text style={styles.actionText}>Decline</Text>
+                  </TouchableOpacity>
+                )}
+                {activeTab === 'new' && (
+                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: tabCfg.color }]} onPress={() => setConfirmId(item.id)}>
+                    <Text style={styles.actionText}>Accept</Text>
+                  </TouchableOpacity>
+                )}
+                {activeTab === 'preparing' && item.status !== 'assigned' && (
+                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: Colors.warning }]} onPress={() => setConfirmId(item.id)}>
+                    <Text style={styles.actionText}>Mark Ready</Text>
+                  </TouchableOpacity>
+                )}
+                {activeTab === 'preparing' && item.status === 'assigned' && (
+                  <TouchableOpacity style={[styles.actionBtn, { backgroundColor: Colors.riderAccent }]} onPress={() => setPickupId(item.id)}>
+                    <Text style={styles.actionText}>Confirm Pickup</Text>
+                  </TouchableOpacity>
+                )}
+                {activeTab === 'completed' && (
+                  <View style={styles.doneBadge}>
+                    <Ionicons name="checkmark-circle" size={16} color={Colors.success} />
+                    <Text style={[styles.actionText, { color: Colors.success }]}>Done</Text>
+                  </View>
+                )}
+              </View>
             </View>
           </View>
         )}
@@ -164,6 +225,28 @@ const SellerOrdersScreen: React.FC = () => {
         variant="success"
         onConfirm={handleAdvance}
         onCancel={() => setConfirmId(null)}
+      />
+
+      <ConfirmModal
+        visible={!!pickupId}
+        title="Confirm Rider Pickup?"
+        message="Confirm that the rider has picked up the order. It will be marked as On the Way."
+        confirmText={advancing ? 'Confirming…' : 'Confirm Pickup'}
+        cancelText="Cancel"
+        variant="info"
+        onConfirm={handlePickup}
+        onCancel={() => setPickupId(null)}
+      />
+
+      <ConfirmModal
+        visible={!!rejectId}
+        title="Decline Order?"
+        message="The order will be cancelled and the customer will be notified."
+        confirmText={advancing ? 'Declining…' : 'Yes, Decline'}
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={handleReject}
+        onCancel={() => setRejectId(null)}
       />
     </SafeAreaView>
   );
@@ -208,6 +291,7 @@ const styles = StyleSheet.create({
   customer: { fontSize: 14, fontWeight: '700', color: Colors.darkGray },
   orderItems: { fontSize: 13, color: Colors.gray },
   orderBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+  actionsRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   orderTotal: { fontSize: 17, fontWeight: '900', color: Colors.sellerAccent },
   actionBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
   actionText: { color: Colors.white, fontSize: 13, fontWeight: '800' },

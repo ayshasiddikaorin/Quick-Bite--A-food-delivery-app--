@@ -1,11 +1,19 @@
+/**
+ * Order domain models — mirror the backend IOrder document.
+ */
+
 export type OrderStatus =
   | 'pending'
   | 'confirmed'
   | 'preparing'
   | 'ready'
+  | 'assigned'
   | 'on_the_way'
+  | 'reached'
   | 'delivered'
   | 'cancelled';
+
+export type DeliveryType = 'standard' | 'express';
 
 export interface OrderItem {
   menuItemId: string;
@@ -15,6 +23,7 @@ export interface OrderItem {
   quantity: number;
 }
 
+/** Full order document returned by the backend */
 export interface Order {
   id: string;
   customerId: string;
@@ -31,9 +40,25 @@ export interface Order {
   total: number;
   status: OrderStatus;
   address: string;
-  deliveryType: 'standard' | 'express';
+  deliveryType: DeliveryType;
   paymentMethod: string;
   promoCode?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Payload sent to POST /orders */
+export interface PlaceOrderPayload {
+  restaurantId: string;
+  restaurantName: string;
+  items: OrderItem[];
+  subtotal: number;
+  deliveryFee: number;
+  discount: number;
+  tax: number;
+  total: number;
+  address: string;
+  deliveryType: DeliveryType;
+  paymentMethod: string;
+  promoCode?: string;
 }

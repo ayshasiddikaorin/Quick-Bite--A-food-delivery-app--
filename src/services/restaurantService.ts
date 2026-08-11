@@ -1,44 +1,77 @@
+/**
+ * restaurantService.ts
+ * ────────────────────
+ * All restaurant-related API calls, separated by role.
+ */
 import { apiRequest } from './apiClient';
-import type { RestaurantData } from '../models';
+import { fetchMenuByRestaurant } from './menuService';
+import type { RestaurantSummary, RestaurantData, Restaurant, CreateRestaurantRequest } from '../models/restaurant';
 
-/** Public: fetch all approved restaurants */
-export function fetchRestaurants(): Promise<RestaurantData[]> {
-  return apiRequest<RestaurantData[]>('/restaurants');
+// ── Public ─────────────────────────────────────────────────────────────────────
+
+/** Get all approved restaurants (home screen list). */
+export function fetchRestaurants(): Promise<RestaurantSummary[]> {
+  return apiRequest<RestaurantSummary[]>('/restaurants');
 }
 
-/** Public: fetch a single restaurant with its menu */
-export function fetchRestaurantById(id: string): Promise<RestaurantData> {
-  return apiRequest<RestaurantData>(`/restaurants/${id}`);
+/**
+ * Get all restaurants joined with their menus (home screen).
+ * The backend list endpoint does not include `menu`, so each restaurant's
+ * menu is fetched individually and attached client-side.
+ */
+export async function fetchRestaurantsWithMenus(): Promise<RestaurantData[]> {
+  const summaries = await fetchRestaurants();
+  const withMenu = await Promise.all(
+    summaries.map(async (r) => ({ ...r, menu: await fetchMenuByRestaurant(r.id) })),
+  );
+  return withMenu;
 }
 
-/** Seller: get own restaurant */
-export function fetchMyRestaurant(): Promise<RestaurantData> {
-  return apiRequest<RestaurantData>('/restaurants/seller/me', {}, true);
+/** Get a single restaurant by id (without menu — fetch menu separately). */
+export function fetchRestaurantById(id: string): Promise<RestaurantSummary> {
+  return apiRequest<RestaurantSummary>(`/restaurants/${id}`);
 }
 
-/** Seller: update own restaurant */
-export function updateMyRestaurant(data: Partial<RestaurantData>): Promise<RestaurantData> {
-  return apiRequest<RestaurantData>('/restaurants/seller/me', {
+// ── Seller ─────────────────────────────────────────────────────────────────────
+
+/** Get the logged-in seller's own restaurant. */
+export function fetchMyRestaurant(): Promise<Restaurant> {
+  return apiRequest<Restaurant>('/restaurants/seller/me', {}, true);
+}
+
+/** Create the seller's restaurant (first-time setup). */
+export function createRestaurant(data: CreateRestaurantRequest): Promise<Restaurant> {
+  return apiRequest<Restaurant>('/restaurants', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }, true);
+}
+
+/** Update the seller's restaurant details. */
+export function updateMyRestaurant(data: Partial<Restaurant>): Promise<Restaurant> {
+  return apiRequest<Restaurant>('/restaurants/seller/me', {
     method: 'PATCH',
     body: JSON.stringify(data),
   }, true);
 }
 
-/** Seller: toggle open/closed */
-export function toggleRestaurantOpen(): Promise<RestaurantData> {
-  return apiRequest<RestaurantData>('/restaurants/seller/me/toggle-open', {
+/** Toggle the restaurant open / closed. */
+export function toggleRestaurantOpen(): Promise<Restaurant> {
+  return apiRequest<Restaurant>('/restaurants/seller/me/toggle-open', {
     method: 'PATCH',
   }, true);
 }
 
-/** Admin: list all restaurants */
-export function adminFetchAllRestaurants(): Promise<RestaurantData[]> {
-  return apiRequest<RestaurantData[]>('/restaurants/admin/all', {}, true);
+// ── Admin ──────────────────────────────────────────────────────────────────────
+
+/** Get all restaurants (approved + pending). */
+export function adminFetchAllRestaurants(): Promise<Restaurant[]> {
+  return apiRequest<Restaurant[]>('/restaurants/admin/all', {}, true);
 }
 
-/** Admin: approve a restaurant */
-export function adminApproveRestaurant(id: string): Promise<RestaurantData> {
-  return apiRequest<RestaurantData>(`/restaurants/admin/${id}/approve`, {
+/** Approve a pending restaurant. */
+export function adminApproveRestaurant(id: string): Promise<Restaurant> {
+  return apiRequest<Restaurant>(`/restaurants/admin/${id}/approve`, {
     method: 'PATCH',
   }, true);
 }

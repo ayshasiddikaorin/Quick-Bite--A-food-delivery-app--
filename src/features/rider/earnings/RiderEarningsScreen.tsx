@@ -7,39 +7,81 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
-  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import Colors from '../../../constants/colors';
+import LoadingScreen from '../../../components/shared/LoadingScreen';
+import { useApiData } from '../../../hooks/useApiData';
+import { useNotifications } from '../../../context/NotificationContext';
+import { fetchEarnings, fetchRiderProfile, RiderEarnings } from '../../../services/riderService';
+import type { Rider } from '../../../models/rider';
 
 const { width: W } = Dimensions.get('window');
 
-const BAR_DATA = [320, 480, 290, 550, 410, 620, 480];
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const MAX_VAL = Math.max(...BAR_DATA);
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-const DAILY_BREAKDOWN = [
-  { day: 'Monday', amount: '৳320', deliveries: 4 },
-  { day: 'Tuesday', amount: '৳480', deliveries: 6 },
-  { day: 'Wednesday', amount: '৳290', deliveries: 3 },
-  { day: 'Thursday', amount: '৳550', deliveries: 7 },
-  { day: 'Friday', amount: '৳410', deliveries: 5 },
-  { day: 'Saturday', amount: '৳620', deliveries: 8 },
-  { day: 'Sunday', amount: '৳480', deliveries: 6 },
-];
+const DUMMY_EARNINGS: RiderEarnings = {
+  todayEarnings: 480,
+  weeklyEarnings: [320, 480, 290, 550, 410, 620, 480],
+  totalEarnings: 11200,
+  totalDeliveries: 47,
+};
+
+const DUMMY_RIDER: Rider = {
+  id: 'rider_dummy',
+  userId: 'rider_dummy',
+  name: 'Karim Hossain',
+  email: 'karim@rider.com',
+  phone: '01XXXXXXXXX',
+  vehicleType: 'Motorcycle',
+  isOnline: false,
+  isVerified: true,
+  rating: 4.8,
+  totalDeliveries: 47,
+  totalEarnings: 11200,
+  todayEarnings: 480,
+  weeklyEarnings: [320, 480, 290, 550, 410, 620, 480],
+};
 
 const RiderEarningsScreen: React.FC = () => {
   const navigation = useNavigation();
+  const { showPopup } = useNotifications();
+
+  const { status, data, reload } = useApiData<RiderEarnings>(fetchEarnings, DUMMY_EARNINGS);
+  const profileState = useApiData<Rider>(fetchRiderProfile, DUMMY_RIDER);
+  const { reload: reloadProfile } = profileState;
+  const loading = status === 'loading';
+
+  // Refresh whenever the screen regains focus
+  useFocusEffect(
+    React.useCallback(() => { reload(); reloadProfile(); }, [reload, reloadProfile]),
+  );
+
+  const weekly = data.weeklyEarnings ?? DUMMY_EARNINGS.weeklyEarnings;
+  const weeklyTotal = weekly.reduce((a, b) => a + b, 0);
+  const barData = weekly.length === 7 ? weekly : [...weekly, ...DUMMY_EARNINGS.weeklyEarnings].slice(0, 7);
+  const MAX_VAL = Math.max(...barData, 1);
+
+  const avgPerDelivery =
+    data.totalDeliveries > 0 ? Math.round(data.totalEarnings / data.totalDeliveries) : 0;
+  const rating = profileState.status !== 'loading' ? profileState.data.rating : DUMMY_RIDER.rating;
+
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading your earnings…" color={Colors.riderAccent} />;
+  }
 
   const handleRequestPayout = () => {
-    Alert.alert(
-      'Payout Requested',
-      'Your payout request of ৳2,840 has been submitted. It will be processed within 24 hours.',
-      [{ text: 'OK' }]
-    );
+    showPopup({
+      title: 'Payout Requested 💸',
+      message: `Your payout of ৳${data.totalEarnings.toLocaleString()} has been submitted and will be processed within 24 hours.`,
+      variant: 'success',
+      autoDismissMs: 4500,
+    });
   };
 
   return (
@@ -52,7 +94,16 @@ const RiderEarningsScreen: React.FC = () => {
           <Ionicons name="arrow-back" size={22} color={Colors.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>My Earnings</Text>
-        <View style={{ width: 40 }} />
+        <View style={styles.headerRight}>
+          {loading && <ActivityIndicator size="small" color={Colors.riderAccent} />}
+          <TouchableOpacity
+            style={styles.refreshBtn}
+            onPress={() => { reload(); reloadProfile(); }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="refresh-outline" size={18} color={Colors.black} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -62,12 +113,12 @@ const RiderEarningsScreen: React.FC = () => {
           <View style={styles.summaryTopRow}>
             <View style={styles.summaryMainItem}>
               <Text style={styles.summaryMainLabel}>This Week</Text>
-              <Text style={styles.summaryMainValue}>৳2,840</Text>
+              <Text style={styles.summaryMainValue}>৳{weeklyTotal.toLocaleString()}</Text>
             </View>
             <View style={styles.summaryDividerV} />
             <View style={styles.summaryMainItem}>
-              <Text style={styles.summaryMainLabel}>This Month</Text>
-              <Text style={styles.summaryMainValue}>৳11,200</Text>
+              <Text style={styles.summaryMainLabel}>All Time</Text>
+              <Text style={styles.summaryMainValue}>৳{data.totalEarnings.toLocaleString()}</Text>
             </View>
           </View>
 
@@ -77,21 +128,21 @@ const RiderEarningsScreen: React.FC = () => {
             <View style={styles.summaryMiniItem}>
               <Ionicons name="bicycle-outline" size={20} color={Colors.riderAccent} />
               <View>
-                <Text style={styles.summaryMiniValue}>47</Text>
+                <Text style={styles.summaryMiniValue}>{data.totalDeliveries}</Text>
                 <Text style={styles.summaryMiniLabel}>Total Deliveries</Text>
               </View>
             </View>
             <View style={styles.summaryMiniItem}>
               <Ionicons name="star-outline" size={20} color={Colors.warning} />
               <View>
-                <Text style={styles.summaryMiniValue}>4.8</Text>
+                <Text style={styles.summaryMiniValue}>{rating ? rating.toFixed(1) : '—'}</Text>
                 <Text style={styles.summaryMiniLabel}>Avg Rating</Text>
               </View>
             </View>
             <View style={styles.summaryMiniItem}>
               <Ionicons name="cash-outline" size={20} color={Colors.success} />
               <View>
-                <Text style={styles.summaryMiniValue}>৳60</Text>
+                <Text style={styles.summaryMiniValue}>৳{avgPerDelivery}</Text>
                 <Text style={styles.summaryMiniLabel}>Avg/Delivery</Text>
               </View>
             </View>
@@ -102,14 +153,14 @@ const RiderEarningsScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>Weekly Earnings Chart</Text>
         <View style={styles.chartCard}>
           <View style={styles.chartHeader}>
-            <Text style={styles.chartPeriod}>Mon 12 – Sun 18 Jan</Text>
+            <Text style={styles.chartPeriod}>This Week</Text>
             <View style={styles.growthBadge}>
               <Ionicons name="trending-up" size={13} color={Colors.riderAccent} />
-              <Text style={styles.growthText}>+8.3%</Text>
+              <Text style={styles.growthText}>৳{weeklyTotal.toLocaleString()}</Text>
             </View>
           </View>
           <View style={styles.barsRow}>
-            {BAR_DATA.map((val, i) => (
+            {barData.map((val, i) => (
               <View key={i} style={styles.barCol}>
                 <Text style={[styles.barValueLabel, i === 5 && { color: Colors.riderAccent }]}>
                   {val}
@@ -134,43 +185,41 @@ const RiderEarningsScreen: React.FC = () => {
         {/* Daily Breakdown */}
         <Text style={styles.sectionTitle}>Daily Breakdown</Text>
         <View style={styles.listCard}>
-          {DAILY_BREAKDOWN.map((item, index) => (
-            <View
-              key={item.day}
-              style={[styles.listRow, index < DAILY_BREAKDOWN.length - 1 && styles.listRowBorder]}
-            >
-              <View style={styles.listLeft}>
-                <View
-                  style={[
-                    styles.dayDot,
-                    { backgroundColor: item.day === 'Saturday' ? Colors.riderAccent : Colors.infoLight },
-                  ]}
-                />
-                <View>
-                  <Text style={[
-                    styles.dayName,
-                    item.day === 'Saturday' && { color: Colors.riderAccent },
-                  ]}>
-                    {item.day}
+          {barData.map((amount, index) => {
+            const isBest = index === barData.indexOf(Math.max(...barData));
+            const day = DAY_NAMES[index];
+            return (
+              <View
+                key={day}
+                style={[styles.listRow, index < barData.length - 1 && styles.listRowBorder]}
+              >
+                <View style={styles.listLeft}>
+                  <View
+                    style={[
+                      styles.dayDot,
+                      { backgroundColor: isBest ? Colors.riderAccent : Colors.infoLight },
+                    ]}
+                  />
+                  <View>
+                    <Text style={[styles.dayName, isBest && { color: Colors.riderAccent }]}>
+                      {day}
+                    </Text>
+                    <Text style={styles.deliveryCount}>৳{amount.toLocaleString()} earned</Text>
+                  </View>
+                </View>
+                <View style={styles.listRight}>
+                  <Text style={[styles.dayAmount, isBest && { color: Colors.riderAccent }]}>
+                    ৳{amount.toLocaleString()}
                   </Text>
-                  <Text style={styles.deliveryCount}>{item.deliveries} deliveries</Text>
+                  {isBest && (
+                    <View style={styles.bestBadge}>
+                      <Text style={styles.bestBadgeText}>Best</Text>
+                    </View>
+                  )}
                 </View>
               </View>
-              <View style={styles.listRight}>
-                <Text style={[
-                  styles.dayAmount,
-                  item.day === 'Saturday' && { color: Colors.riderAccent },
-                ]}>
-                  {item.amount}
-                </Text>
-                {item.day === 'Saturday' && (
-                  <View style={styles.bestBadge}>
-                    <Text style={styles.bestBadgeText}>Best</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         {/* Spacer for button */}
@@ -186,7 +235,7 @@ const RiderEarningsScreen: React.FC = () => {
           activeOpacity={0.85}
         >
           <Ionicons name="card-outline" size={20} color={Colors.white} />
-          <Text style={styles.payoutBtnText}>Request Payout  •  ৳2,840</Text>
+          <Text style={styles.payoutBtnText}>Request Payout  •  ৳{data.totalEarnings.toLocaleString()}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -216,6 +265,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: { fontSize: 17, fontWeight: '800', color: Colors.black },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  refreshBtn: {
+    width: 36, height: 36, borderRadius: 12,
+    backgroundColor: Colors.lightGray, alignItems: 'center', justifyContent: 'center',
+  },
   scroll: { padding: 20, paddingBottom: 100 },
 
   // Summary card
