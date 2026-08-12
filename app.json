@@ -23,7 +23,6 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-
       [
         "expo-image-picker",
         {
@@ -31,7 +30,8 @@
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to take a food photo.",
           "microphonePermission": false
         }
-      ]
+      ],
+      "expo-font"
     ],
     "extra": {
       "eas": {
