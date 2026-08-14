@@ -3,7 +3,6 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import mongoSanitize from 'express-mongo-sanitize';
-import path from 'path';
 
 import { userRoutes } from './modules/users/user.routes';
 import { restaurantRoutes } from './modules/restaurants/restaurant.routes';
@@ -52,13 +51,12 @@ export function createApp() {
   });
 
   // ── Security & parsing ─────────────────────────────────────────────────────
+  // Limit must exceed the largest accepted image when base64-encoded
+  // (8MB binary → ~10.7MB base64) plus JSON envelope overhead.
   app.use(helmet());
   app.use(cors());
-  app.use(express.json({ limit: '12mb' }));
+  app.use(express.json({ limit: '16mb' }));
   app.use(mongoSanitize());
-
-  // ── Uploaded images (served at /uploads/<file>) ────────────────────────────
-  app.use('/uploads', express.static(path.resolve(__dirname, '..', 'uploads')));
 
   // ── Routes ─────────────────────────────────────────────────────────────────
   app.use('/api/v1/auth', userRoutes);

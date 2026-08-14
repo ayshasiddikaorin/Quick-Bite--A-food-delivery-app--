@@ -1,9 +1,7 @@
 import { Request, Response } from 'express';
-import fs from 'fs';
-import path from 'path';
-import crypto from 'crypto';
 import { AppError } from '../../shared/errors/AppError';
 import { sendOk } from '../../shared/utils/response';
+import { Image } from './image.model';
 
 const ALLOWED_EXT: Record<string, string> = {
   png: 'image/png',
@@ -13,22 +11,20 @@ const ALLOWED_EXT: Record<string, string> = {
   gif: 'image/gif',
 };
 
-/** Directory where uploaded images are stored (root of the project). */
-const UPLOAD_DIR = path.resolve(__dirname, '../../..', 'uploads');
+const MAX_BYTES = 8 * 1024 * 1024;
 
 export class UploadController {
   /**
    * POST /api/v1/uploads/image
    * Body: { data: string, ext?: string }
    *   data — raw base64 or a full data-URI like `data:image/png;base64,...`
-   * Responds with { url } pointing to the stored image.
+   * Stores the image in MongoDB (serverless-friendly) and responds with
+   * { url: '/api/v1/uploads/image/<id>' }.
    */
-  createImage = (req: Request, res: Response): void => {
+  createImage = async (req: Request, res: Response): Promise<void> => {
     const raw = typeof req.body?.data === 'string' ? req.body.data : '';
-
     if (!raw) throw new AppError('No image data provided', 400);
 
-    // Extract base64 payload + mime type (if the data-URI form was sent)
     let b64 = raw;
     let ext = typeof req.body?.ext === 'string' ? req.body.ext.toLowerCase() : '';
     const dataUriMatch = /^data:([^;]+);base64,(.+)$/.exec(raw);
@@ -42,18 +38,33 @@ export class UploadController {
 
     const buffer = Buffer.from(b64, 'base64');
     if (buffer.length === 0) throw new AppError('Image data is empty', 400);
-    if (buffer.length > 10 * 1024 * 1024) {
-      throw new AppError('Image is too large (max 10MB)', 400);
-    }
+    if (buffer.length > MAX_BYTES) throw new AppError(`Image is too large (max ${MAX_BYTES / 1024 / 1024}MB)`, 400);
 
-    if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    const doc = await Image.create({
+      data: buffer,
+      mimeType: ALLOWED_EXT[ext],
+      size: buffer.length,
+      originalExt: ext,
+    });
 
-    const filename = `${crypto.randomBytes(16).toString('hex')}.${ext}`;
-    fs.writeFileSync(path.join(UPLOAD_DIR, filename), buffer);
+    // Relative URL — the app resolves it against whatever API host it uses,
+    // so uploaded images work on emulator / physical device / LAN / prod.
+    sendOk(res, { url: `/api/v1/uploads/image/${doc._id}` }, 'Image uploaded');
+  };
 
-    // Store a RELATIVE path, not an absolute host-based URL. The app resolves
-    // relative paths against whatever API host it is currently using, so
-    // uploaded images keep working across emulator / physical device / LAN IP.
-    sendOk(res, { url: `/uploads/${filename}` }, 'Image uploaded');
+  /**
+   * GET /api/v1/uploads/image/:id
+   * Streams the stored image back with the correct Content-Type.
+   */
+  getImage = async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    if (!id) throw new AppError('Image id is required', 400);
+
+    const doc = await Image.findById(id);
+    if (!doc) throw new AppError('Image not found', 404);
+
+    res.set('Content-Type', doc.mimeType);
+    res.set('Cache-Control', 'public, max-age=31536000, immutable');
+    res.send(doc.data);
   };
 }
