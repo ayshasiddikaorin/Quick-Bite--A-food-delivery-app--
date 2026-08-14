@@ -16,6 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Colors from '../../../constants/colors';
 import ConfirmModal from '../../../components/shared/ConfirmModal';
+import { useAuth } from '../../../context/AuthContext';
 import { useNotifications } from '../../../context/NotificationContext';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
 import { clearCart, getCart } from '../../../storage/cartStorage';
@@ -83,6 +84,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
 const PaymentScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const route = useRoute<RouteProps>();
+  const { user } = useAuth();
   const { showPopup } = useNotifications();
 
   const { subtotal, discount, tax, deliveryFee, total, address, deliveryType } =
@@ -94,7 +96,21 @@ const PaymentScreen: React.FC = () => {
 
   const selectedOption = PAYMENT_OPTIONS.find((o) => o.key === selectedMethod)!;
 
-  const handlePlaceOrder = () => setShowConfirm(true);
+  const handlePlaceOrder = () => {
+    if (!user) {
+      showPopup({
+        title: 'Sign in required',
+        message: 'Please sign in as a buyer to place your order.',
+        variant: 'warning',
+        confirmText: 'Sign In',
+        cancelText: 'Not Now',
+        showCancel: true,
+        onConfirm: () => navigation.navigate('Login', { role: 'buyer' }),
+      });
+      return;
+    }
+    setShowConfirm(true);
+  };
 
   const confirmOrder = async () => {
     setShowConfirm(false);

@@ -92,7 +92,7 @@ function toRecommended(items: FoodItem[]): RecommendedItem[] {
 
 const BuyerHomeScreen: React.FC = () => {
   const { user } = useAuth();
-  const { unreadCount } = useNotifications();
+  const { unreadCount, showPopup } = useNotifications();
   const navigation = useNavigation<NativeStackNavigationProp<BuyerStackParamList>>();
   const [activeCategory, setActiveCategory] = useState('All');
   const [refreshing, setRefreshing] = useState(false);
@@ -131,6 +131,18 @@ const BuyerHomeScreen: React.FC = () => {
 
   const openRestaurant = (restaurantId: string) =>
     navigation.navigate('RestaurantPage', { restaurantId });
+
+  const handleGuestFavorite = () => {
+    showPopup({
+      title: 'Sign in required',
+      message: 'Please sign in as a buyer to save favorites and place orders.',
+      variant: 'warning',
+      confirmText: 'Sign In',
+      cancelText: 'Not Now',
+      showCancel: true,
+      onConfirm: () => navigation.navigate('Login', { role: 'buyer' }),
+    });
+  };
 
   if (isLoading) {
     return <LoadingScreen label="Loading fresh dishes…" color={Colors.primary} />;
@@ -233,7 +245,11 @@ const BuyerHomeScreen: React.FC = () => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.hList}
             renderItem={({ item }) => (
-              <FoodCard item={item} onPress={() => openRestaurant(item.restaurantId)} />
+              <FoodCard
+                item={item}
+                onPress={() => openRestaurant(item.restaurantId)}
+                onFavoritePress={user ? undefined : handleGuestFavorite}
+              />
             )}
           />
         </View>

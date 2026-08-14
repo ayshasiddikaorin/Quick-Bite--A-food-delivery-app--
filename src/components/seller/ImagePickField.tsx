@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -24,12 +24,20 @@ interface Props {
  * Image picker for seller add/edit forms.
  * - Tapping the preview opens the gallery, uploads the picked file to the
  *   backend and resolves to a URL.
- * - If the backend is offline the raw image is kept so the preview still
- *   works, and the user is told to use the URL field instead.
+ * - If the backend is offline the picked photo is kept as a LOCAL preview only
+ *   (never saved into the form value), and the user is told to use the URL
+ *   field instead.
  */
 const ImagePickField: React.FC<Props> = ({ value, onChange, loadingColor = Colors.sellerAccent }) => {
   const [uploading, setUploading] = useState(false);
+  const [previewUri, setPreviewUri] = useState<string | null>(null);
   const { showPopup } = useNotifications();
+
+  // When the committed value changes externally (typed URL, cleared, edited
+  // item load), drop any un-committed local preview so it never overrides it.
+  useEffect(() => {
+    setPreviewUri(null);
+  }, [value]);
 
   const requestPermission = async (): Promise<boolean> => {
     const perm = await ImagePicker.getMediaLibraryPermissionsAsync();
@@ -69,12 +77,14 @@ const ImagePickField: React.FC<Props> = ({ value, onChange, loadingColor = Color
     try {
       const url = await uploadImageBase64(dataUri);
       onChange(url);
+      setPreviewUri(url);
     } catch {
-      // Backend unreachable — keep the local preview, flag that it is a data URI.
-      onChange(dataUri);
+      // Backend unreachable — show the local preview only; the form value is
+      // left untouched so a huge base64 blob is never persisted.
+      setPreviewUri(dataUri);
       showPopup({
-        title: 'Offline Upload',
-        message: 'Backend is offline, so the photo was not saved to the server. Paste an image URL instead.',
+        title: 'Upload Unavailable',
+        message: 'Could not reach the server, so this photo was not uploaded. Paste an image URL below instead.',
         variant: 'warning',
         autoDismissMs: 4000,
       });
@@ -84,6 +94,8 @@ const ImagePickField: React.FC<Props> = ({ value, onChange, loadingColor = Color
   };
 
   const clearImage = () => onChange('');
+
+  const displayUri = previewUri ?? value;
 
   if (uploading) {
     return (
@@ -97,8 +109,8 @@ const ImagePickField: React.FC<Props> = ({ value, onChange, loadingColor = Color
   return (
     <View>
       <TouchableOpacity style={styles.uploadBox} onPress={pickImage} activeOpacity={0.85}>
-        {value ? (
-          <Image source={{ uri: safeImageUri(value) }} style={styles.preview} resizeMode="cover" />
+        {displayUri ? (
+          <Image source={{ uri: safeImageUri(displayUri) }} style={styles.preview} resizeMode="cover" />
         ) : (
           <View style={styles.placeholderInner}>
             <Ionicons name="image-outline" size={40} color={Colors.sellerAccent} />
@@ -108,7 +120,7 @@ const ImagePickField: React.FC<Props> = ({ value, onChange, loadingColor = Color
         )}
       </TouchableOpacity>
 
-      {value !== '' && (
+      {displayUri !== '' && (
         <View style={styles.actionRow}>
           <TouchableOpacity style={styles.changeBtn} onPress={pickImage} activeOpacity={0.8}>
             <Ionicons name="camera-outline" size={15} color={Colors.sellerAccent} />

@@ -22,6 +22,7 @@ import ConfirmModal from '../../../components/shared/ConfirmModal';
 import { menuGroups } from '../../../data/accountData';
 import Colors from '../../../constants/colors';
 import { useAuth } from '../../../context/AuthContext';
+import { useNotifications } from '../../../context/NotificationContext';
 import { useApiData } from '../../../hooks/useApiData';
 import { fetchMyOrders } from '../../../services/orderService';
 import type { UserProfile, Order, OrderStatus } from '../../../models';
@@ -62,10 +63,15 @@ function formatDate(iso: string): string {
 const BuyerAccountScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const { user, logout, refreshProfile } = useAuth();
+  const { showPopup } = useNotifications();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const { data: orders } = useApiData<Order[]>(fetchMyOrders, []);
+  const { data: orders } = useApiData<Order[]>(
+    user ? fetchMyOrders : async () => [],
+    [],
+    [user],
+  );
 
   const activeOrder = orders.find((o) => ACTIVE_STATUSES.includes(o.status));
   const history = orders.filter((o) => o.status === 'delivered' || o.status === 'cancelled').slice(0, 3);
@@ -78,6 +84,18 @@ const BuyerAccountScreen: React.FC = () => {
       address: order.address,
       deliveryType: order.deliveryType,
       isDummy: false,
+    });
+  };
+
+  const promptLogin = () => {
+    showPopup({
+      title: 'Sign in required',
+      message: 'Please sign in as a buyer to continue.',
+      variant: 'warning',
+      confirmText: 'Sign In',
+      cancelText: 'Not Now',
+      showCancel: true,
+      onConfirm: () => navigation.navigate('RoleSelect'),
     });
   };
 
@@ -110,6 +128,7 @@ const BuyerAccountScreen: React.FC = () => {
   };
 
   const openMenu = (menuId: string) => {
+    if (!user) { promptLogin(); return; }
     switch (menuId) {
       case 'my-orders':     navigation.navigate('BuyerMyOrders'); break;
       case 'favorites':     navigation.navigate('BuyerFavorites'); break;
@@ -141,12 +160,34 @@ const BuyerAccountScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Profile card uses live data from AuthContext */}
-        <ProfileCard user={profile} />
+        {!user ? (
+          <View style={styles.guestCard}>
+            <View style={styles.guestIconBox}>
+              <Ionicons name="person-outline" size={32} color={Colors.primary} />
+            </View>
+            <Text style={styles.guestTitle}>Welcome, Guest</Text>
+            <Text style={styles.guestSub}>
+              Sign in to access your favorites, orders, and exclusive offers.
+            </Text>
+            <TouchableOpacity
+              style={styles.guestBtn}
+              onPress={() => navigation.navigate('RoleSelect')}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="log-in-outline" size={18} color={Colors.white} />
+              <Text style={styles.guestBtnText}>Sign In / Register</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            {/* Profile card uses live data from AuthContext */}
+            <ProfileCard user={profile} />
 
-        <PromoBanner loyaltyPoints={profile.loyaltyPoints} />
+            <PromoBanner loyaltyPoints={profile.loyaltyPoints} />
 
-        <WalletCard balance={profile.walletBalance} />
+            <WalletCard balance={profile.walletBalance} />
+          </>
+        )}
 
         {/* ── Active Order ─────────────────────────────────────────────── */}
         {activeOrder && (
@@ -232,16 +273,18 @@ const BuyerAccountScreen: React.FC = () => {
         ))}
 
         <View style={styles.logoutSection}>
-          <TouchableOpacity
-            style={styles.logoutBtn}
-            onPress={() => setShowLogoutModal(true)}
-            activeOpacity={0.85}
-          >
-            <View style={styles.logoutIconBg}>
-              <Ionicons name="log-out-outline" size={18} color={Colors.error} />
-            </View>
-            <Text style={styles.logoutText}>Log Out</Text>
-          </TouchableOpacity>
+          {user && (
+            <TouchableOpacity
+              style={styles.logoutBtn}
+              onPress={() => setShowLogoutModal(true)}
+              activeOpacity={0.85}
+            >
+              <View style={styles.logoutIconBg}>
+                <Ionicons name="log-out-outline" size={18} color={Colors.error} />
+              </View>
+              <Text style={styles.logoutText}>Log Out</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <View style={styles.versionBox}>
@@ -288,6 +331,44 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.lightGray, alignItems: 'center', justifyContent: 'center',
   },
   scrollContent: { paddingBottom: 24 },
+  guestCard: {
+    marginTop: 22,
+    marginHorizontal: 20,
+    backgroundColor: Colors.white,
+    borderRadius: 18,
+    padding: 24,
+    alignItems: 'center',
+    gap: 6,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  guestIconBox: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
+    backgroundColor: Colors.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  guestTitle: { fontSize: 18, fontWeight: '800', color: Colors.black },
+  guestSub: { fontSize: 13, color: Colors.gray, textAlign: 'center', lineHeight: 19, marginBottom: 4 },
+  guestBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 10,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+    borderRadius: 14,
+  },
+  guestBtnText: { color: Colors.white, fontSize: 14, fontWeight: '800' },
   menuSection: { marginTop: 22, paddingHorizontal: 20 },
   groupTitle: {
     fontSize: 13, fontWeight: '700', color: Colors.gray,

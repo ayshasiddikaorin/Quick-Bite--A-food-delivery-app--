@@ -4,7 +4,6 @@ import { NavigationContainer } from '@react-navigation/native';
 
 import { useAuth } from '../context/AuthContext';
 import Colors from '../constants/colors';
-import AuthNavigator from './AuthNavigator';
 import BuyerNavigator from './BuyerNavigator';
 import SellerNavigator from './SellerNavigator';
 import RiderNavigator from './RiderNavigator';
@@ -24,9 +23,9 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       {!user ? (
-        <AuthNavigator />
+        <BuyerNavigator key="guest" />
       ) : user.role === 'buyer' ? (
-        <BuyerNavigator />
+        <BuyerNavigator key="buyer" />
       ) : user.role === 'seller' ? (
         <SellerNavigator />
       ) : user.role === 'rider' ? (

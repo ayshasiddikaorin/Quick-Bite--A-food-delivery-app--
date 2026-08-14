@@ -19,18 +19,23 @@ import Colors from '../../../../constants/colors';
 import type { RestaurantSummary } from '../../../../models';
 import { getFavorites, removeFavorite } from '../../../../storage/favoritesStorage';
 import type { BuyerStackParamList } from '../../../../navigation/BuyerNavigator';
+import { useAuth } from '../../../../context/AuthContext';
+import { useNotifications } from '../../../../context/NotificationContext';
 import { safeImageUri } from '../../../../utils/image';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 
 const BuyerFavoritesScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
+  const { user } = useAuth();
+  const { showPopup } = useNotifications();
   const [favorites, setFavorites] = useState<RestaurantSummary[] | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    if (!user) { setFavorites([]); return; }
     setFavorites(await getFavorites());
-  }, []);
+  }, [user]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -52,7 +57,44 @@ const BuyerFavoritesScreen: React.FC = () => {
     navigation.navigate('RestaurantPage', { restaurantId: restaurant.id });
   };
 
+  const promptLogin = () => {
+    showPopup({
+      title: 'Sign in required',
+      message: 'Please sign in as a buyer to see and manage your favorites.',
+      variant: 'warning',
+      confirmText: 'Sign In',
+      cancelText: 'Not Now',
+      showCancel: true,
+      onConfirm: () => navigation.navigate('Login', { role: 'buyer' }),
+    });
+  };
+
   const loading = favorites === null;
+
+  if (!user) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+            <Ionicons name="arrow-back" size={22} color={Colors.black} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Favorites</Text>
+          <View style={styles.backBtn} />
+        </View>
+        <View style={styles.emptyState}>
+          <Ionicons name="lock-closed-outline" size={52} color={Colors.border} />
+          <Text style={styles.emptyTitle}>Sign in to see your favorites</Text>
+          <Text style={styles.emptyText}>
+            Your favorite restaurants are saved to your account.
+          </Text>
+          <TouchableOpacity style={styles.browseBtn} onPress={promptLogin} activeOpacity={0.85}>
+            <Text style={styles.browseBtnText}>Sign In</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>

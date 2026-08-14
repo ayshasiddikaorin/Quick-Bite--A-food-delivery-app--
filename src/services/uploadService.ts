@@ -4,8 +4,8 @@
  * Draws a url string from a locally picked image file.
  * TODO:
  * 1. `ImagePicker.launchImageLibraryAsync({ base64: true })` -> asset.base64
- * 2. POST base64 to `POST /api/v1/uploads/image` which stores the file
- *    and returns `{ url }` — this url is what gets saved on the menu item.
+ * 2. POST base64 to `POST /api/v1/uploads/image` which stores the file in
+ *    MongoDB and returns `{ url }` — this url is what gets saved on the menu item.
  */
 import { apiRequest } from './apiClient';
 
@@ -24,6 +24,6 @@ export function uploadImageBase64(dataUri: string, ext?: string): Promise<string
       method: 'POST',
       body: JSON.stringify({ data: dataUri, ext }),
     },
-    false,
+    true,
   ).then((res) => res.url);
 }

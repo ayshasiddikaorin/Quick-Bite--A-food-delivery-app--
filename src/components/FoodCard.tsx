@@ -15,9 +15,11 @@ import { safeImageUri } from '../utils/image';
 interface Props {
   item: FoodItem;
   onPress?: () => void;
+  /** Overrides the internal favorite toggle. If provided, the parent controls the heart action. */
+  onFavoritePress?: () => void;
 }
 
-const FoodCard: React.FC<Props> = ({ item, onPress }) => {
+const FoodCard: React.FC<Props> = ({ item, onPress, onFavoritePress }) => {
   const [isFav, setIsFav] = useState(item.isFavorite);
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
@@ -26,6 +28,7 @@ const FoodCard: React.FC<Props> = ({ item, onPress }) => {
       Animated.timing(scaleAnim, { toValue: 1.3, duration: 120, useNativeDriver: true }),
       Animated.timing(scaleAnim, { toValue: 1,   duration: 120, useNativeDriver: true }),
     ]).start();
+    if (onFavoritePress) { onFavoritePress(); return; }
     setIsFav(!isFav);
   };
 

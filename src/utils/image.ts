@@ -17,7 +17,7 @@ const API_ORIGIN = (API_BASE_URL.split('/api/v1')[0] ?? API_BASE_URL).replace(/\
 /**
  * Resolve a stored image reference against the currently-used backend host.
  * - absolute http(s)/data/file URIs pass through untouched
- * - relative paths (`/uploads/...`) are prefixed with the API origin, so uploaded
+ * - relative paths (`/api/v1/uploads/...`) are prefixed with the API origin, so uploaded
  *   images keep working regardless of emulator vs. physical device host
  * - empty/null values fall back to a neutral placeholder
  */

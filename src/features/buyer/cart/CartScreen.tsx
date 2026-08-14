@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../../context/AuthContext';
 import { useNotifications } from '../../../context/NotificationContext';
 
 import CartHeader from './CartHeader';
@@ -42,6 +43,7 @@ const PROMO_CODES: Record<string, number> = {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 const CartScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const { user } = useAuth();
   const { showPopup } = useNotifications();
 
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -129,8 +131,20 @@ const CartScreen: React.FC = () => {
   const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
 
   const handleCheckout = useCallback(() => {
+    if (!user) {
+      showPopup({
+        title: 'Sign in required',
+        message: 'Please sign in as a buyer to place your order.',
+        variant: 'warning',
+        confirmText: 'Sign In',
+        cancelText: 'Not Now',
+        showCancel: true,
+        onConfirm: () => navigation.navigate('Login', { role: 'buyer' }),
+      });
+      return;
+    }
     navigation.navigate('Checkout', { subtotal, discount: discountAmount, tax });
-  }, [subtotal, discountAmount, tax]);
+  }, [user, showPopup, subtotal, discountAmount, tax]);
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {

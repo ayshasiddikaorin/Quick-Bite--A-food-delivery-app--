@@ -24,6 +24,8 @@ import { isFavorite, toggleFavorite } from '../../../storage/favoritesStorage';
 import { fetchRestaurantById } from '../../../services/restaurantService';
 import { fetchMenuByRestaurant } from '../../../services/menuService';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
+import { useAuth } from '../../../context/AuthContext';
+import { useNotifications } from '../../../context/NotificationContext';
 import { safeImageUri } from '../../../utils/image';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
@@ -132,6 +134,9 @@ const RestaurantScreen: React.FC = () => {
   const route = useRoute<RouteProps>();
   const { restaurantId, offerDiscount } = route.params;
 
+  const { user } = useAuth();
+  const { showPopup } = useNotifications();
+
   const [restaurant, setRestaurant] = useState<RestaurantData | null>(null);
   const [menu, setMenu] = useState<RestaurantMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -189,9 +194,22 @@ const RestaurantScreen: React.FC = () => {
       if (!cancelled) setIsFav(fav);
     }).catch(() => {});
     return () => { cancelled = true; };
-  }, [restaurantId]);
+  }, [restaurantId, user?.userId]);
+
+  const requireLogin = () => {
+    showPopup({
+      title: 'Sign in required',
+      message: 'Please sign in as a buyer to save favorites and place orders.',
+      variant: 'warning',
+      confirmText: 'Sign In',
+      cancelText: 'Not Now',
+      showCancel: true,
+      onConfirm: () => navigation.navigate('Login', { role: 'buyer' }),
+    });
+  };
 
   const handleToggleFav = async () => {
+    if (!user) { requireLogin(); return; }
     if (!restaurant) return;
     const updated = await toggleFavorite(restaurant);
     setIsFav(updated.some((r) => r.id === restaurant.id));
@@ -209,6 +227,7 @@ const RestaurantScreen: React.FC = () => {
   });
 
   const handleAddToCart = useCallback(async (menuItem: RestaurantMenuItem & { price: number }) => {
+    if (!user) { requireLogin(); return; }
     if (!restaurant) return;
     const isRemove = menuItem.id.startsWith('remove_');
     const realId = isRemove ? menuItem.id.replace('remove_', '') : menuItem.id;
@@ -247,7 +266,7 @@ const RestaurantScreen: React.FC = () => {
       }
       await saveCart(cart);
     } catch { /* non-critical */ }
-  }, [restaurant, restaurantId, menu]);
+  }, [restaurant, restaurantId, menu, user, showPopup, navigation]);
 
   if (loading) {
     return (
@@ -444,7 +463,7 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 120 },
   coverWrapper: { height: COVER_HEIGHT, width: W },
   coverImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  coverOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.25)' },
+  coverOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.25)' },
   infoCard: {
     backgroundColor: Colors.white, borderTopLeftRadius: 28, borderTopRightRadius: 28,
     marginTop: -28, padding: 20,

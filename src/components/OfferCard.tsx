@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   },
   cardFullWidth: { width: '100%', marginRight: 0 },
   bgImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  overlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.50)' },
+  overlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.50)' },
   discountBadge: {
     position: 'absolute', top: 14, right: 14,
     backgroundColor: Colors.primary, borderRadius: 14,

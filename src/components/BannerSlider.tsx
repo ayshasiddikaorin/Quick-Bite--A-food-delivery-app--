@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
   overlay: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.38)',
     borderRadius: 22,
   },

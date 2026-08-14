@@ -1,7 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RestaurantSummary } from '../models';
+import { getStoredAuth } from './authStorage';
 
-const FAVORITES_KEY = 'QUICKBITE_FAVORITES';
+/** Each user gets their own favorites bucket, keyed by userId. */
+async function favoritesKey(): Promise<string> {
+  const auth = await getStoredAuth();
+  const uid = auth?.user?.userId ?? 'guest';
+  return `QUICKBITE_FAVORITES_${uid}`;
+}
 
 function normalize(r: RestaurantSummary): RestaurantSummary {
   return {
@@ -26,7 +32,7 @@ function normalize(r: RestaurantSummary): RestaurantSummary {
 
 export const getFavorites = async (): Promise<RestaurantSummary[]> => {
   try {
-    const raw = await AsyncStorage.getItem(FAVORITES_KEY);
+    const raw = await AsyncStorage.getItem(await favoritesKey());
     if (!raw) return [];
     const parsed = JSON.parse(raw) as RestaurantSummary[];
     return Array.isArray(parsed) ? parsed : [];
@@ -52,13 +58,13 @@ export const toggleFavorite = async (restaurant: RestaurantSummary): Promise<Res
     updated = [normalize(restaurant), ...favorites];
   }
 
-  await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(updated));
+  await AsyncStorage.setItem(await favoritesKey(), JSON.stringify(updated));
   return updated;
 };
 
 export const removeFavorite = async (restaurantId: string): Promise<RestaurantSummary[]> => {
   const favorites = await getFavorites();
   const updated = favorites.filter((r) => r.id !== restaurantId);
-  await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(updated));
+  await AsyncStorage.setItem(await favoritesKey(), JSON.stringify(updated));
   return updated;
 };

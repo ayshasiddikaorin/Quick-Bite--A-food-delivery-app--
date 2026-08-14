@@ -19,7 +19,11 @@ import RestaurantScreen from '../features/buyer/restaurant/RestaurantScreen';
 import BuyerMyOrdersScreen from '../features/buyer/profile/activity/BuyerMyOrdersScreen';
 import BuyerFavoritesScreen from '../features/buyer/profile/activity/BuyerFavoritesScreen';
 import BuyerNotificationsScreen from '../features/buyer/profile/activity/BuyerNotificationsScreen';
+import RoleSelectScreen from '../features/auth/RoleSelectScreen';
+import LoginScreen from '../features/auth/LoginScreen';
+import RegisterScreen from '../features/auth/RegisterScreen';
 import Colors from '../constants/colors';
+import { UserRole } from '../models';
 
 // ─── Param lists ──────────────────────────────────────────────────────────────
 export type BuyerStackParamList = {
@@ -55,6 +59,9 @@ export type BuyerStackParamList = {
     deliveryType: 'standard' | 'express';
     isDummy?: boolean;
   };
+  RoleSelect: undefined;
+  Login: { role: UserRole };
+  Register: { role: UserRole };
 };
 
 export type BuyerTabParamList = {
@@ -188,6 +195,9 @@ export default function BuyerNavigator() {
       <Stack.Screen name="Checkout"        component={CheckoutScreen} />
       <Stack.Screen name="Payment"         component={PaymentScreen} />
       <Stack.Screen name="OrderTracking"   component={OrderTrackingScreen} />
+      <Stack.Screen name="RoleSelect"      component={RoleSelectScreen} />
+      <Stack.Screen name="Login"           component={LoginScreen} />
+      <Stack.Screen name="Register"        component={RegisterScreen} />
     </Stack.Navigator>
   );
 }
