@@ -129,7 +129,7 @@ const RiderDeliveryHistoryScreen: React.FC = () => {
   });
 
   const totalPayout = filtered.reduce((sum, h) => sum + h.payout, 0);
-  const avgPayout = filtered.length > 0 ? Math.round(totalPayout / filtered.length) : 0;
+  const avgPayout = filtered.length > 0 ? totalPayout / filtered.length : 0;
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -191,12 +191,12 @@ const RiderDeliveryHistoryScreen: React.FC = () => {
                 </View>
                 <View style={styles.stripDivider} />
                 <View style={styles.stripItem}>
-                  <Text style={styles.stripValue}>৳{totalPayout}</Text>
+                  <Text style={styles.stripValue}>৳{totalPayout.toFixed(2)}</Text>
                   <Text style={styles.stripLabel}>Earned</Text>
                 </View>
                 <View style={styles.stripDivider} />
                 <View style={styles.stripItem}>
-                  <Text style={styles.stripValue}>৳{avgPayout}</Text>
+                  <Text style={styles.stripValue}>৳{avgPayout.toFixed(2)}</Text>
                   <Text style={styles.stripLabel}>Avg Fee</Text>
                 </View>
               </View>

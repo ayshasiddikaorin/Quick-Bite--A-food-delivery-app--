@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-const TIMEOUT_MS = 5000;
+const TIMEOUT_MS = 20000;
 
 export type ApiDataState<T> =
   | { status: 'loading'; data: T }

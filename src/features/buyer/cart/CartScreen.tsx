@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotifications } from '../../../context/NotificationContext';
 
@@ -51,13 +51,15 @@ const CartScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // ── Load cart from AsyncStorage ───────────────────────────────────────────
-  useEffect(() => {
-    (async () => {
-      const stored = await getCart();
-      setCart(stored);
-      setLoading(false);
-    })();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      (async () => {
+        const stored = await getCart();
+        setCart(stored);
+        setLoading(false);
+      })();
+    }, []),
+  );
 
   // ── Refresh local state from AsyncStorage after each mutation ──────────────
   const refreshCart = useCallback(async () => {

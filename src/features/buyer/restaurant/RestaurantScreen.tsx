@@ -290,10 +290,15 @@ const RestaurantScreen: React.FC = () => {
     );
   }
 
-  const allCategories = ['Popular', ...restaurant.menuCategories.filter((c) => c !== 'Popular')];
+  const declaredCategories = restaurant.menuCategories.filter((c) => c && c !== 'Popular');
+  const itemCategories = Array.from(new Set(menu.map((m) => m.category).filter(Boolean)));
+  const allCategories = ['Popular', ...Array.from(new Set([...declaredCategories, ...itemCategories]))];
+  const popularItems = menu.filter((m) => m.isPopular);
   const filteredMenu =
     activeCategory === 'Popular'
-      ? menu.filter((m) => m.isPopular)
+      ? popularItems.length > 0
+        ? popularItems
+        : menu
       : menu.filter((m) => m.category === activeCategory);
   const totalCartCount = Object.values(cartQty).reduce((s, v) => s + v, 0);
 

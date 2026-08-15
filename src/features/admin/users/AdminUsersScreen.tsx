@@ -56,7 +56,7 @@ const AdminUsersScreen: React.FC = () => {
         rows
           .filter((u) => u.role !== 'admin')
           .map((u) => ({
-            userId: u.userId,
+            userId: (u as { id?: string }).id ?? u.userId,
             name: u.name,
             email: u.email,
             role: u.role as UserRow['role'],

@@ -48,10 +48,6 @@ const SellerMenuScreen: React.FC = () => {
     React.useCallback(() => { reload(); }, [reload]),
   );
 
-  if (status === 'loading') {
-    return <LoadingScreen label="Loading your menu…" color={Colors.sellerAccent} />;
-  }
-
   const toggleItem = useCallback(async (id: string) => {
     setBusy(id);
     try {
@@ -70,6 +66,10 @@ const SellerMenuScreen: React.FC = () => {
     } catch { /* stay on fallback */ }
     finally { setBusy(null); setDeleteId(null); }
   }, [deleteId, reload]);
+
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading your menu…" color={Colors.sellerAccent} />;
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>

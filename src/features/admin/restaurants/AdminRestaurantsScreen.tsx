@@ -40,14 +40,14 @@ const AdminRestaurantsScreen: React.FC = () => {
   const status = rsState.status;
   const reload = rsState.reload;
 
-  if (status === 'loading') {
-    return <LoadingScreen label="Loading restaurants…" color={Colors.adminAccent} />;
-  }
-
   // Refresh whenever the screen regains focus (e.g. after seller registers a restaurant)
   useFocusEffect(
     React.useCallback(() => { reload(); }, [reload]),
   );
+
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading restaurants…" color={Colors.adminAccent} />;
+  }
 
   const handleApprove = (id: string, name: string) => {
     setConfirmRestaurant({ id, name });
