@@ -47,6 +47,31 @@ export class RiderService {
     return rider;
   }
 
+  /** Rider: update their own profile (name, phone, vehicleType). */
+  async updateProfile(
+    userId: string,
+    dto: { name?: string; phone?: string; vehicleType?: string },
+  ): Promise<IRider> {
+    const rider = await this.repo.findByUserId(userId);
+    if (!rider) throw new AppError('Rider profile not found', 404);
+
+    const fields: Record<string, unknown> = {};
+    if (dto.name !== undefined && typeof dto.name === 'string') fields.name = dto.name.trim();
+    if (dto.phone !== undefined) fields.phone = dto.phone;
+    if (dto.vehicleType !== undefined) fields.vehicleType = dto.vehicleType;
+
+    // Keep rider fields in sync with the user record.
+    const userPatch: Record<string, unknown> = {};
+    if (fields.name) userPatch.name = fields.name;
+    if (fields.phone !== undefined) userPatch.phone = fields.phone;
+    if (fields.vehicleType !== undefined) userPatch.vehicleType = fields.vehicleType;
+    if (Object.keys(userPatch).length) await this.userRepo.update(userId, userPatch as any);
+
+    const updated = await this.repo.update(String(rider._id), fields);
+    if (!updated) throw new AppError('Rider profile not found', 404);
+    return updated;
+  }
+
   async getDeliveryHistory(userId: string): Promise<IRider['_id'] extends never ? never : object[]> {
     await this.getProfile(userId); // validate exists
     const orders = await this.orderRepo.findByRider(userId);

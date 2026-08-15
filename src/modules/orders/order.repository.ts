@@ -42,6 +42,10 @@ export class OrderRepository implements IOrderRepository {
     );
   }
 
+  async deleteByCustomer(customerId: string): Promise<void> {
+    await Order.deleteMany({ customerId });
+  }
+
   async count(filter: Record<string, unknown> = {}): Promise<number> {
     return Order.countDocuments(filter);
   }

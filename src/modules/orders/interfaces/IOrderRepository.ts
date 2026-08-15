@@ -11,6 +11,7 @@ export interface IOrderRepository {
   findAll(filter?: Record<string, unknown>): Promise<IOrder[]>;
   updateStatus(id: string, status: OrderStatus): Promise<IOrder | null>;
   assignRider(id: string, riderId: string, riderName: string): Promise<IOrder | null>;
+  deleteByCustomer(customerId: string): Promise<void>;
   count(filter?: Record<string, unknown>): Promise<number>;
   totalRevenue(): Promise<number>;
   weeklyOrderCounts(): Promise<number[]>;

@@ -3,11 +3,25 @@ import { body } from 'express-validator';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
 import { UserRepository } from './user.repository';
+import { RestaurantRepository } from '../restaurants/restaurant.repository';
+import { MenuItemRepository } from '../menuItems/menuItem.repository';
+import { OfferRepository } from '../offers/offer.repository';
+import { RiderRepository } from '../riders/rider.repository';
+import { OrderRepository } from '../orders/order.repository';
 import { authenticate, authorize } from '../../shared/middleware/authenticate';
 import { validate } from '../../shared/middleware/validate';
 
 const router = Router();
-const controller = new UserController(new UserService(new UserRepository()));
+const controller = new UserController(
+  new UserService(
+    new UserRepository(),
+    new RestaurantRepository(),
+    new MenuItemRepository(),
+    new OfferRepository(),
+    new RiderRepository(),
+    new OrderRepository(),
+  ),
+);
 
 // ── Public routes ─────────────────────────────────────────────────────────────
 router.post(
@@ -40,5 +54,6 @@ router.patch('/me', authenticate, controller.updateProfile);
 // ── Admin routes ──────────────────────────────────────────────────────────────
 router.get('/admin/users', authenticate, authorize('admin'), controller.listUsers);
 router.patch('/admin/users/:id/toggle', authenticate, authorize('admin'), controller.toggleUser);
+router.delete('/admin/users/:id', authenticate, authorize('admin'), controller.deleteUser);
 
 export { router as userRoutes };

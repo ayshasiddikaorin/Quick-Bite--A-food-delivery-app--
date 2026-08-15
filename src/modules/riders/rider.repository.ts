@@ -29,6 +29,10 @@ export class RiderRepository implements IRiderRepository {
     return rider.save();
   }
 
+  async deleteByUser(userId: string): Promise<void> {
+    await Rider.deleteMany({ userId });
+  }
+
   async count(): Promise<number> {
     return Rider.countDocuments();
   }

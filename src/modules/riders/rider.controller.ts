@@ -20,6 +20,12 @@ export class RiderController {
     sendOk(res, rider, 'Online status updated');
   };
 
+  updateProfile = async (req: Request, res: Response): Promise<void> => {
+    const { name, phone, vehicleType } = req.body as { name?: string; phone?: string; vehicleType?: string };
+    const rider = await this.service.updateProfile(req.user!.id, { name, phone, vehicleType });
+    sendOk(res, rider, 'Profile updated');
+  };
+
   getDeliveryHistory = async (req: Request, res: Response): Promise<void> => {
     const history = await this.service.getDeliveryHistory(req.user!.id);
     sendOk(res, history);

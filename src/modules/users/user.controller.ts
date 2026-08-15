@@ -37,4 +37,9 @@ export class UserController {
     const user = await this.service.toggleActive(req.params.id);
     sendOk(res, user, 'User status updated');
   };
+
+  deleteUser = async (req: Request, res: Response): Promise<void> => {
+    await this.service.deleteUser(req.params.id);
+    sendOk(res, null, 'User and all related data deleted');
+  };
 }

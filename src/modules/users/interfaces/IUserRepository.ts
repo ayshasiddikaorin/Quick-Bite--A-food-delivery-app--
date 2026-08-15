@@ -14,5 +14,6 @@ export interface IUserRepository {
   findByRole(role: UserRole): Promise<IUser[]>;
   update(id: string, data: Partial<IUser>): Promise<IUser | null>;
   toggleActive(id: string): Promise<IUser | null>;
+  hardDelete(id: string): Promise<boolean>;
   countByRole(): Promise<Record<string, number>>;
 }

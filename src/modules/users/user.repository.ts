@@ -33,6 +33,11 @@ export class UserRepository implements IUserRepository {
     return user.save();
   }
 
+  async hardDelete(id: string): Promise<boolean> {
+    const result = await User.findByIdAndDelete(id);
+    return !!result;
+  }
+
   async countByRole(): Promise<Record<string, number>> {
     const result = await User.aggregate([
       { $group: { _id: '$role', count: { $sum: 1 } } },

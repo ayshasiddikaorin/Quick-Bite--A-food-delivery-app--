@@ -15,6 +15,7 @@ const controller = new RiderController(
 router.post('/profile/ensure', authenticate, authorize('rider'), controller.ensureProfile);
 router.get('/profile', authenticate, authorize('rider'), controller.getProfile);
 router.patch('/profile/toggle-online', authenticate, authorize('rider'), controller.toggleOnline);
+router.patch('/profile', authenticate, authorize('rider'), controller.updateProfile);
 router.get('/delivery-history', authenticate, authorize('rider'), controller.getDeliveryHistory);
 router.get('/earnings', authenticate, authorize('rider'), controller.getEarnings);
 router.get('/stats', authenticate, authorize('rider'), controller.getStats);

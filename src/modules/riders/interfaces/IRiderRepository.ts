@@ -7,6 +7,7 @@ export interface IRiderRepository {
   findAll(): Promise<IRider[]>;
   update(id: string, data: Partial<IRider>): Promise<IRider | null>;
   toggleOnline(userId: string): Promise<IRider | null>;
+  deleteByUser(userId: string): Promise<void>;
   count(): Promise<number>;
   countOnline(): Promise<number>;
 }
