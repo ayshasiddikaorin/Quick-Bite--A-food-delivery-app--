@@ -7,6 +7,7 @@ import RiderAcceptedDeliveryScreen from '../features/rider/delivery/RiderAccepte
 import RiderActiveDeliveriesScreen from '../features/rider/activeDelivery/RiderActiveDeliveriesScreen';
 import RiderDeliveryHistoryScreen from '../features/rider/history/RiderDeliveryHistoryScreen';
 import RiderEarningsScreen from '../features/rider/earnings/RiderEarningsScreen';
+import RiderEditProfileScreen from '../features/rider/profile/RiderEditProfileScreen';
 import type { Order } from '../models/order';
 
 export type RiderStackParamList = {
@@ -16,6 +17,7 @@ export type RiderStackParamList = {
   RiderActiveDeliveries: undefined;
   RiderDeliveryHistory: undefined;
   RiderEarnings: undefined;
+  RiderEditProfile: undefined;
 };
 
 const Stack = createNativeStackNavigator<RiderStackParamList>();
@@ -29,6 +31,7 @@ export default function RiderNavigator() {
       <Stack.Screen name="RiderActiveDeliveries" component={RiderActiveDeliveriesScreen} />
       <Stack.Screen name="RiderDeliveryHistory"  component={RiderDeliveryHistoryScreen} />
       <Stack.Screen name="RiderEarnings"         component={RiderEarningsScreen} />
+      <Stack.Screen name="RiderEditProfile"      component={RiderEditProfileScreen} />
     </Stack.Navigator>
   );
 }

@@ -59,10 +59,11 @@ const statStyles = StyleSheet.create({
   label: { fontSize: 12, color: Colors.gray, fontWeight: '600' },
 });
 
-const QUICK_ACTIONS: { label: string; icon: keyof typeof Ionicons.glyphMap; screen: 'RiderRequests' | 'RiderDeliveryHistory' | 'RiderEarnings' | 'RiderActiveDeliveries'; badgeKey?: 'newRequests' | 'activeDeliveries' }[] = [
+const QUICK_ACTIONS: { label: string; icon: keyof typeof Ionicons.glyphMap; screen: 'RiderRequests' | 'RiderDeliveryHistory' | 'RiderEarnings' | 'RiderActiveDeliveries' | 'RiderEditProfile'; badgeKey?: 'newRequests' | 'activeDeliveries' }[] = [
   { label: 'New Requests',    icon: 'list-outline'    as const, screen: 'RiderRequests'         as const, badgeKey: 'newRequests' },
   { label: 'Delivery History', icon: 'time-outline'    as const, screen: 'RiderDeliveryHistory'  as const },
   { label: 'Earnings',         icon: 'cash-outline'    as const, screen: 'RiderEarnings'         as const },
+  { label: 'Edit Profile',     icon: 'person-outline'  as const, screen: 'RiderEditProfile'      as const },
   { label: 'Active Delivery',  icon: 'bicycle-outline' as const, screen: 'RiderActiveDeliveries' as const, badgeKey: 'activeDeliveries' },
 ];
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 import Colors from '../../../constants/colors';
@@ -19,11 +20,12 @@ import ConfirmModal from '../../../components/shared/ConfirmModal';
 import ImagePickField from '../../../components/seller/ImagePickField';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotifications } from '../../../context/NotificationContext';
-import { createRestaurant } from '../../../services/restaurantService';
-import type { CreateRestaurantRequest } from '../../../models';
+import { createRestaurant, updateMyRestaurant, fetchMyRestaurant } from '../../../services/restaurantService';
+import type { CreateRestaurantRequest, Restaurant } from '../../../models';
 import type { SellerStackParamList } from '../../../navigation/SellerNavigator';
 
 type NavProp = NativeStackNavigationProp<SellerStackParamList>;
+type RouteProps = RouteProp<SellerStackParamList, 'SellerRestaurantSetup'>;
 
 const CUISINES = ['Bengali', 'Indian', 'Chinese', 'Thai', 'Italian', 'Fast Food', 'Burgers', 'Dessert', 'Seafood', 'Veg'];
 const MENU_CATEGORIES = ['Burgers', 'Pizza', 'Chicken', 'Dessert', 'Drinks', 'Rice', 'Noodles', 'Salads'];
@@ -43,6 +45,8 @@ type FormErrors = Partial<Record<keyof FormState | 'cuisine' | 'menuCategories',
 
 const SellerRestaurantSetupScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
+  const route = useRoute<RouteProps>();
+  const editing = route.params?.editing ?? false;
   const { user, logout } = useAuth();
   const { showPopup } = useNotifications();
 
@@ -61,6 +65,33 @@ const SellerRestaurantSetupScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [showLogout, setShowLogout] = useState(false);
+  const [prefillDone, setPrefillDone] = useState(!editing);
+
+  // In edit mode, load the seller's existing restaurant into the form.
+  useEffect(() => {
+    if (!editing) return;
+    let mounted = true;
+    (async () => {
+      try {
+        const r: Restaurant = await fetchMyRestaurant();
+        if (!mounted) return;
+        setForm({
+          name: r.name ?? '',
+          phone: r.phone ?? '',
+          address: r.address ?? '',
+          deliveryTime: r.deliveryTime ?? '30-45 min',
+          deliveryFee: String(r.deliveryFee ?? ''),
+          minOrder: String(r.minOrder ?? ''),
+          coverImage: r.coverImage ?? '',
+          logo: r.logo ?? '',
+        });
+        setCuisine(Array.isArray(r.cuisine) ? r.cuisine : []);
+        setMenuCategories(Array.isArray(r.menuCategories) ? r.menuCategories : []);
+      } catch { /* keep defaults */ }
+      finally { if (mounted) setPrefillDone(true); }
+    })();
+    return () => { mounted = false; };
+  }, [editing]);
 
   const set = (key: keyof FormState) => (value: string) => {
     setForm((f) => ({ ...f, [key]: value }));
@@ -100,17 +131,28 @@ const SellerRestaurantSetupScreen: React.FC = () => {
 
     setLoading(true);
     try {
-      await createRestaurant(payload);
-      showPopup({
-        title: 'Restaurant Registered! 🍽️',
-        message: 'Your restaurant is set up. Add menu items to start receiving orders.',
-        variant: 'success',
-        autoDismissMs: 3000,
-      });
-      navigation.replace('SellerDashboard');
+      if (editing) {
+        await updateMyRestaurant(payload);
+        showPopup({
+          title: 'Restaurant Updated! 🍽️',
+          message: 'Your restaurant details have been saved.',
+          variant: 'success',
+          autoDismissMs: 2500,
+        });
+        navigation.goBack();
+      } else {
+        await createRestaurant(payload);
+        showPopup({
+          title: 'Restaurant Registered! 🍽️',
+          message: 'Your restaurant is set up. Add menu items to start receiving orders.',
+          variant: 'success',
+          autoDismissMs: 3000,
+        });
+        navigation.replace('SellerDashboard');
+      }
     } catch (err: unknown) {
       showPopup({
-        title: 'Registration Failed',
+        title: editing ? 'Update Failed' : 'Registration Failed',
         message: `${err instanceof Error ? err.message : 'Something went wrong'}. Make sure you are connected to the backend and retry.`,
         variant: 'error',
       });
@@ -124,12 +166,23 @@ const SellerRestaurantSetupScreen: React.FC = () => {
       <StatusBar barStyle="dark-content" backgroundColor={Colors.white} />
 
       <View style={styles.header}>
-        <View style={styles.backBtn} />
-        <Text style={styles.headerTitle}>Restaurant Setup</Text>
-        <TouchableOpacity style={styles.logoutBtn} onPress={() => setShowLogout(true)}>
-          <Ionicons name="log-out-outline" size={19} color={Colors.error} />
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => (editing ? navigation.goBack() : setShowLogout(true))}
+          activeOpacity={0.8}
+        >
+          <Ionicons name={editing ? 'arrow-back' : 'log-out-outline'} size={19} color={editing ? Colors.black : Colors.error} />
         </TouchableOpacity>
+        <Text style={styles.headerTitle}>{editing ? 'Edit Restaurant' : 'Restaurant Setup'}</Text>
+        <View style={styles.backBtn} />
       </View>
+
+      {!prefillDone && (
+        <View style={styles.prefillLoader}>
+          <ActivityIndicator size="small" color={Colors.sellerAccent} />
+          <Text style={styles.prefillText}>Loading your restaurant…</Text>
+        </View>
+      )}
 
       <ScrollView
         contentContainerStyle={styles.scroll}
@@ -140,9 +193,13 @@ const SellerRestaurantSetupScreen: React.FC = () => {
           <View style={styles.heroIcon}>
             <Ionicons name="storefront-outline" size={26} color={Colors.sellerAccent} />
           </View>
-          <Text style={styles.title}>Get your restaurant online</Text>
+          <Text style={styles.title}>
+            {editing ? 'Update your restaurant' : 'Get your restaurant online'}
+          </Text>
           <Text style={styles.subtitle}>
-            Tell us about your restaurant so customers can find and order from you.
+            {editing
+              ? 'Update your restaurant details so customers see accurate information.'
+              : 'Tell us about your restaurant so customers can find and order from you.'}
           </Text>
         </View>
 
@@ -159,7 +216,7 @@ const SellerRestaurantSetupScreen: React.FC = () => {
             icon="storefront-outline"
             value={form.name}
             onChangeText={set('name')}
-            placeholder="Spice Garden"
+            placeholder="Enter restaurant name"
             error={errors.name}
           />
           <InputField
@@ -168,7 +225,7 @@ const SellerRestaurantSetupScreen: React.FC = () => {
             value={form.phone}
             onChangeText={set('phone')}
             keyboardType="phone-pad"
-            placeholder="+880 1X XX XXX XXX"
+            placeholder="Enter phone number"
             error={errors.phone}
           />
           <InputField
@@ -176,7 +233,7 @@ const SellerRestaurantSetupScreen: React.FC = () => {
             icon="location-outline"
             value={form.address}
             onChangeText={set('address')}
-            placeholder="House 12, Road 5, Dhanmondi, Dhaka"
+            placeholder="Enter address"
             multiline
             numberOfLines={2}
             error={errors.address}
@@ -225,7 +282,7 @@ const SellerRestaurantSetupScreen: React.FC = () => {
             icon="time-outline"
             value={form.deliveryTime}
             onChangeText={set('deliveryTime')}
-            placeholder="30-45 min"
+            placeholder="Enter delivery time"
             error={errors.deliveryTime}
           />
           <InputField
@@ -234,7 +291,7 @@ const SellerRestaurantSetupScreen: React.FC = () => {
             value={form.deliveryFee}
             onChangeText={set('deliveryFee')}
             keyboardType="numeric"
-            placeholder="50"
+            placeholder="Enter delivery fee"
             error={errors.deliveryFee}
           />
           <InputField
@@ -243,20 +300,22 @@ const SellerRestaurantSetupScreen: React.FC = () => {
             value={form.minOrder}
             onChangeText={set('minOrder')}
             keyboardType="numeric"
-            placeholder="100"
+            placeholder="Enter minimum order"
             error={errors.minOrder}
           />
         </View>
 
         <PrimaryButton
-          title="Register Restaurant"
+          title={editing ? 'Save Changes' : 'Register Restaurant'}
           onPress={handleSave}
           loading={loading}
           color={Colors.sellerAccent}
         />
-        <Text style={styles.note}>
-          Your restaurant will be visible to customers once an admin approves it.
-        </Text>
+        {!editing && (
+          <Text style={styles.note}>
+            Your restaurant will be visible to customers once an admin approves it.
+          </Text>
+        )}
       </ScrollView>
 
       <ConfirmModal
@@ -286,7 +345,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  backBtn: { width: 36, height: 36 },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: Colors.lightGray,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  prefillLoader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  prefillText: { fontSize: 13, color: Colors.gray, fontWeight: '600' },
   logoutBtn: {
     width: 36,
     height: 36,

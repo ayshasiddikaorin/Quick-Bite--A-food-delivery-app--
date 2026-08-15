@@ -241,7 +241,7 @@ const CheckoutScreen: React.FC = () => {
           icon="location-outline"
           value={draftAddress}
           onChangeText={setDraftAddress}
-          placeholder="House, Road, Area, City"
+          placeholder="Enter delivery address"
           multiline
           numberOfLines={3}
         />

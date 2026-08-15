@@ -25,7 +25,6 @@ import SearchBar from '../../../components/SearchBar';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
 
 import {
-  banners,
   popularFoods,
   offers as dummyOffers,
   recommendedFoods,
@@ -40,6 +39,7 @@ import { fetchActiveOffers } from '../../../services/offerService';
 import { fetchRestaurantsWithMenus } from '../../../services/restaurantService';
 import type {
   OfferItem,
+  BannerItem,
   RestaurantData,
   RestaurantMenuItem,
   FoodItem,
@@ -95,6 +95,7 @@ const BuyerHomeScreen: React.FC = () => {
   const { unreadCount, showPopup } = useNotifications();
   const navigation = useNavigation<NativeStackNavigationProp<BuyerStackParamList>>();
   const [activeCategory, setActiveCategory] = useState('All');
+  const [search, setSearch] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const firstName = user?.name?.split(' ')[0] ?? 'Guest';
 
@@ -128,6 +129,39 @@ const BuyerHomeScreen: React.FC = () => {
   const liveRecommended  = deriveFoodItems(restaurants, (m) => m.isAvailable !== false);
   const popularItems     = livePopular.length > 0 ? livePopular : popularFoods;
   const recommendedItems = liveRecommended.length > 0 ? toRecommended(liveRecommended).slice().reverse() : recommendedFoods;
+
+  // Slider shows real data from the database: active offers → banner shape.
+  const bannerItems: BannerItem[] = (offers.length > 0 ? offers : dummyOffers).map((o) => ({
+    id: o.id,
+    image: o.image,
+    title: o.title,
+    subtitle: `${o.discount}% OFF${o.description ? ` • ${o.description}` : ''}`,
+    bgColor: o.bgColor,
+    restaurantId: o.restaurantId,
+  }));
+
+  // Apply search + category filters.
+  const query = search.trim().toLowerCase();
+  const selectedCat = activeCategory === 'All' ? '' : activeCategory.replace(/^\S+\s*/, '').trim();
+  const categoryMatch = (c: string | undefined) =>
+    selectedCat.length === 0 ||
+    (c ?? '').toLowerCase() === selectedCat.toLowerCase();
+
+  const matchesQuery = (name: string | undefined, c: string | undefined) =>
+    query.length === 0 ||
+    (name ?? '').toLowerCase().includes(query) ||
+    (c ?? '').toLowerCase().includes(query);
+
+  const filteredRestaurants = restaurants.filter(
+    (r) => categoryMatch(r.cuisine?.[0]) && (query.length === 0 || r.name.toLowerCase().includes(query)),
+  );
+
+  const filteredPopular = popularItems.filter(
+    (f) => matchesQuery(f.name, f.category) && categoryMatch(f.category),
+  );
+  const filteredRecommended = recommendedItems.filter(
+    (f) => matchesQuery(f.name, f.category) && categoryMatch(f.category),
+  );
 
   const openRestaurant = (restaurantId: string) =>
     navigation.navigate('RestaurantPage', { restaurantId });
@@ -194,7 +228,7 @@ const BuyerHomeScreen: React.FC = () => {
           <Text style={styles.greetingSub}>What are you craving today?</Text>
         </View>
 
-        <SearchBar />
+        <SearchBar value={search} onChangeText={setSearch} onFilterPress={() => setActiveCategory('All')} />
 
         {/* ── Categories ─────────────────────────────────────────────── */}
         <FlatList
@@ -218,17 +252,18 @@ const BuyerHomeScreen: React.FC = () => {
         />
 
         {/* ── Banners ────────────────────────────────────────────────── */}
-        <BannerSlider banners={banners} />
+        <BannerSlider banners={bannerItems} />
 
         {/* ── Restaurants ────────────────────────────────────────────── */}
         <View style={styles.section}>
           <SectionHeader title="Restaurants" onSeeAll={() => {}} />
           <FlatList
-            data={restaurants}
+            data={filteredRestaurants}
             keyExtractor={(r) => r.id}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.hList}
+            ListEmptyComponent={restaurants.length > 0 ? <Text style={styles.noResults}>No restaurants match your search</Text> : null}
             renderItem={({ item }) => (
               <RestaurantCard restaurant={item} onPress={() => openRestaurant(item.id)} />
             )}
@@ -239,11 +274,12 @@ const BuyerHomeScreen: React.FC = () => {
         <View style={styles.section}>
           <SectionHeader title="Popular Foods" onSeeAll={() => {}} />
           <FlatList
-            data={popularItems}
+            data={filteredPopular}
             keyExtractor={(i) => i.id}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.hList}
+            ListEmptyComponent={popularItems.length > 0 ? <Text style={styles.noResults}>No items match your search</Text> : null}
             renderItem={({ item }) => (
               <FoodCard
                 item={item}
@@ -271,9 +307,10 @@ const BuyerHomeScreen: React.FC = () => {
         <View style={styles.section}>
           <SectionHeader title="Recommended" onSeeAll={() => {}} />
           <FlatList
-            data={recommendedItems}
+            data={filteredRecommended}
             keyExtractor={(i) => i.id}
             scrollEnabled={false}
+            ListEmptyComponent={recommendedItems.length > 0 ? <Text style={styles.noResults}>No items match your search</Text> : null}
             renderItem={({ item }) => (
               <RecommendedCard item={item} onPress={() => openRestaurant(item.restaurantId)} />
             )}
@@ -351,4 +388,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 8,
   },
   fallbackText: { fontSize: 11, color: Colors.warning, fontWeight: '600', flex: 1 },
+  noResults: {
+    fontSize: 13, color: Colors.gray, fontWeight: '500',
+    paddingHorizontal: 4, paddingVertical: 8,
+  },
 });

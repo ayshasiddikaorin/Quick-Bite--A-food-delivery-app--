@@ -16,7 +16,8 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import Colors from '../../../constants/colors';
 import { AuthUser, UserRole } from '../../../models/user';
 import { useNotifications } from '../../../context/NotificationContext';
-import { adminFetchUsers, adminToggleUser } from '../../../services/adminService';
+import { adminFetchUsers, adminToggleUser, adminDeleteUser } from '../../../services/adminService';
+import ConfirmModal from '../../../components/shared/ConfirmModal';
 
 type RoleFilter = 'All' | 'Buyers' | 'Sellers' | 'Riders';
 
@@ -44,6 +45,8 @@ const AdminUsersScreen: React.FC = () => {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -95,13 +98,23 @@ const AdminUsersScreen: React.FC = () => {
     }
   };
 
-  const showActions = (user: UserRow) => {
-    showPopup({
-      title: user.name,
-      message: `${user.email}\nRole: ${user.role} • Status: ${user.isActive ? 'Active' : 'Inactive'}`,
-      variant: 'info',
-      autoDismissMs: 4000,
-    });
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    setDeleting(true);
+    try {
+      await adminDeleteUser(deleteId);
+      setUsers((prev) => prev.filter((u) => u.userId !== deleteId));
+      setDeleteId(null);
+      showPopup({ title: 'User Deleted', message: 'The user and all their data were removed.', variant: 'success', autoDismissMs: 2500 });
+    } catch (err: unknown) {
+      showPopup({
+        title: 'Delete Failed',
+        message: `${err instanceof Error ? err.message : 'Something went wrong'}. Could not delete the user.`,
+        variant: 'error',
+      });
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const filteredUsers = users.filter((u) => {
@@ -161,11 +174,11 @@ const AdminUsersScreen: React.FC = () => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.moreBtn}
-            onPress={() => showActions(item)}
+            style={[styles.moreBtn, { backgroundColor: Colors.errorLight }]}
+            onPress={() => setDeleteId(item.userId)}
             activeOpacity={0.8}
           >
-            <Ionicons name="ellipsis-vertical" size={18} color={Colors.gray} />
+            <Ionicons name="trash-outline" size={18} color={Colors.error} />
           </TouchableOpacity>
         </View>
       </View>
@@ -254,6 +267,17 @@ const AdminUsersScreen: React.FC = () => {
           }
         />
       )}
+
+      <ConfirmModal
+        visible={!!deleteId}
+        title="Delete User?"
+        message="This will permanently delete the user and all their related data (orders, restaurant, menu items, offers). This cannot be undone."
+        confirmText={deleting ? 'Deleting…' : 'Delete'}
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => { if (!deleting) setDeleteId(null); }}
+      />
     </SafeAreaView>
   );
 };

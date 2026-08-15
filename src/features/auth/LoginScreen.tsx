@@ -121,7 +121,7 @@ const LoginScreen: React.FC = () => {
             }}
             keyboardType="email-address"
             autoCapitalize="none"
-            placeholder="you@example.com"
+            placeholder="Enter email"
             error={errors.email}
           />
           <InputField
@@ -133,7 +133,7 @@ const LoginScreen: React.FC = () => {
               if (errors.password) setErrors((e) => ({ ...e, password: undefined }));
             }}
             isPassword
-            placeholder="••••••••"
+            placeholder="Enter password"
             error={errors.password}
           />
 

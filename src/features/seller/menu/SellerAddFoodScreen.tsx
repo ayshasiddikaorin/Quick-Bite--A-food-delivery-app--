@@ -125,7 +125,7 @@ const SellerAddFoodScreen: React.FC = () => {
           icon="link-outline"
           value={imageUrl}
           onChangeText={setImageUrl}
-          placeholder="https://example.com/food.jpg"
+          placeholder="Enter image URL"
           keyboardType="url"
           autoCapitalize="none"
           autoCorrect={false}
@@ -137,7 +137,7 @@ const SellerAddFoodScreen: React.FC = () => {
             icon="fast-food-outline"
             value={name}
             onChangeText={(v) => { setName(v); setErrors((e) => ({ ...e, name: '' })); }}
-            placeholder="Classic Burger"
+            placeholder="Enter name"
             error={errors.name}
           />
           <InputField
@@ -146,7 +146,7 @@ const SellerAddFoodScreen: React.FC = () => {
             value={price}
             onChangeText={(v) => { setPrice(v); setErrors((e) => ({ ...e, price: '' })); }}
             keyboardType="numeric"
-            placeholder="250"
+            placeholder="Enter amount"
             error={errors.price}
           />
 
@@ -177,7 +177,7 @@ const SellerAddFoodScreen: React.FC = () => {
             icon="document-text-outline"
             value={description}
             onChangeText={(v) => { setDescription(v); setErrors((e) => ({ ...e, description: '' })); }}
-            placeholder="A juicy beef patty with fresh veggies..."
+            placeholder="Enter description"
             multiline
             numberOfLines={3}
             error={errors.description}

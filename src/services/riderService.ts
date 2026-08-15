@@ -28,6 +28,16 @@ export function fetchRiderProfile(): Promise<Rider> {
   return apiRequest<Rider>('/riders/profile', {}, true);
 }
 
+/** Update the logged-in rider's profile (name, phone, vehicleType). */
+export function updateRiderProfile(
+  data: Partial<Pick<Rider, 'name' | 'phone' | 'vehicleType'>>,
+): Promise<Rider> {
+  return apiRequest<Rider>('/riders/profile', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  }, true);
+}
+
 /** Toggle the rider's online / offline status. */
 export function toggleOnline(): Promise<Rider> {
   return apiRequest<Rider>('/riders/profile/toggle-online', { method: 'PATCH' }, true);

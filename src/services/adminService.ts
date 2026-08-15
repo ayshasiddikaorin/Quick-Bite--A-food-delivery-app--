@@ -22,3 +22,8 @@ export function adminFetchUsers(role?: string): Promise<AuthUser[]> {
 export function adminToggleUser(id: string): Promise<AuthUser> {
   return apiRequest<AuthUser>(`/auth/admin/users/${id}/toggle`, { method: 'PATCH' }, true);
 }
+
+/** Permanently delete a user and all their related data (orders, restaurant, etc). */
+export function adminDeleteUser(id: string): Promise<void> {
+  return apiRequest<void>(`/auth/admin/users/${id}`, { method: 'DELETE' }, true);
+}

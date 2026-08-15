@@ -223,12 +223,15 @@ const SellerDashboardScreen: React.FC = () => {
             { label: 'Manage Orders', icon: 'list-outline' as const, screen: 'SellerOrders' as const, badge: stats.newOrders },
             { label: 'Add Food', icon: 'add-circle-outline' as const, screen: 'SellerAddFood' as const },
             { label: 'Menu', icon: 'restaurant-outline' as const, screen: 'SellerMenu' as const },
+            { label: 'Offers', icon: 'pricetag-outline' as const, screen: 'SellerOffers' as const },
+            { label: 'Edit Restaurant', icon: 'storefront-outline' as const, screen: 'SellerRestaurantSetup' as const, params: { editing: true } as const },
             { label: 'Sales Report', icon: 'bar-chart-outline' as const, screen: 'SellerSales' as const },
+            { label: 'Edit Profile', icon: 'person-outline' as const, screen: 'SellerEditProfile' as const },
           ].map((action) => (
             <TouchableOpacity
               key={action.label}
               style={styles.actionCard}
-              onPress={() => navigation.navigate(action.screen as any)}
+              onPress={() => navigation.navigate(action.screen as any, action.params as any)}
               activeOpacity={0.85}
             >
               <View style={styles.actionIcon}>

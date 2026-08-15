@@ -42,14 +42,15 @@ const SellerMenuScreen: React.FC = () => {
   const status = menuState.status;
   const reload = menuState.reload;
 
-  if (status === 'loading') {
-    return <LoadingScreen label="Loading your menu…" color={Colors.sellerAccent} />;
-  }
-
-  // Refresh whenever the screen regains focus (e.g. after add/edit food)
+  // Refresh whenever the screen regains focus (e.g. after add/edit food).
+  // MUST be called before any early return to respect the Rules of Hooks.
   useFocusEffect(
     React.useCallback(() => { reload(); }, [reload]),
   );
+
+  if (status === 'loading') {
+    return <LoadingScreen label="Loading your menu…" color={Colors.sellerAccent} />;
+  }
 
   const toggleItem = useCallback(async (id: string) => {
     setBusy(id);

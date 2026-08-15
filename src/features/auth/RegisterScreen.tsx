@@ -147,7 +147,7 @@ const RegisterScreen: React.FC = () => {
             icon="person-outline"
             value={form.name}
             onChangeText={set('name')}
-            placeholder="John Doe"
+            placeholder="Enter name"
             error={errors.name}
           />
           <InputField
@@ -157,7 +157,7 @@ const RegisterScreen: React.FC = () => {
             onChangeText={set('email')}
             keyboardType="email-address"
             autoCapitalize="none"
-            placeholder="you@example.com"
+            placeholder="Enter email"
             error={errors.email}
           />
           <InputField
@@ -166,7 +166,7 @@ const RegisterScreen: React.FC = () => {
             value={form.phone}
             onChangeText={set('phone')}
             keyboardType="phone-pad"
-            placeholder="+880 1X XX XXX XXX"
+            placeholder="Enter phone number"
             error={errors.phone}
           />
           {role === 'seller' && (
@@ -175,7 +175,7 @@ const RegisterScreen: React.FC = () => {
               icon="storefront-outline"
               value={form.restaurantName}
               onChangeText={set('restaurantName')}
-              placeholder="Spice Garden"
+              placeholder="Enter restaurant name"
               error={errors.restaurantName}
             />
           )}
@@ -185,7 +185,7 @@ const RegisterScreen: React.FC = () => {
               icon="bicycle-outline"
               value={form.vehicleType}
               onChangeText={set('vehicleType')}
-              placeholder="Motorcycle / Bicycle / Car"
+              placeholder="Enter vehicle type"
               error={errors.vehicleType}
             />
           )}
@@ -195,7 +195,7 @@ const RegisterScreen: React.FC = () => {
             value={form.password}
             onChangeText={set('password')}
             isPassword
-            placeholder="••••••••"
+            placeholder="Enter password"
             error={errors.password}
           />
           <InputField
@@ -204,7 +204,7 @@ const RegisterScreen: React.FC = () => {
             value={form.confirmPassword}
             onChangeText={set('confirmPassword')}
             isPassword
-            placeholder="••••••••"
+            placeholder="Enter password again"
             error={errors.confirmPassword}
           />
         </View>

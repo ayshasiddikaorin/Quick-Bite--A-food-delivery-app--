@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   TextInput,
@@ -9,9 +9,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '../constants/colors';
 
-const SearchBar: React.FC = () => {
-  const [query, setQuery] = useState('');
+interface Props {
+  value: string;
+  onChangeText: (text: string) => void;
+  onFilterPress?: () => void;
+}
 
+const SearchBar: React.FC<Props> = ({ value, onChangeText, onFilterPress }) => {
   return (
     <View style={styles.wrapper}>
       <View style={styles.container}>
@@ -20,18 +24,18 @@ const SearchBar: React.FC = () => {
           style={styles.input}
           placeholder="Search food, restaurant..."
           placeholderTextColor={Colors.gray}
-          value={query}
-          onChangeText={setQuery}
+          value={value}
+          onChangeText={onChangeText}
           returnKeyType="search"
         />
-        {query.length > 0 && (
-          <TouchableOpacity onPress={() => setQuery('')} style={styles.clearBtn}>
+        {value.length > 0 && (
+          <TouchableOpacity onPress={() => onChangeText('')} style={styles.clearBtn}>
             <Ionicons name="close-circle" size={18} color={Colors.gray} />
           </TouchableOpacity>
         )}
       </View>
 
-      <TouchableOpacity style={styles.filterBtn} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.filterBtn} activeOpacity={0.8} onPress={onFilterPress}>
         <Ionicons name="options-outline" size={20} color={Colors.white} />
       </TouchableOpacity>
     </View>
