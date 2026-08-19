@@ -8,9 +8,11 @@ import RiderActiveDeliveriesScreen from '../features/rider/activeDelivery/RiderA
 import RiderDeliveryHistoryScreen from '../features/rider/history/RiderDeliveryHistoryScreen';
 import RiderEarningsScreen from '../features/rider/earnings/RiderEarningsScreen';
 import RiderEditProfileScreen from '../features/rider/profile/RiderEditProfileScreen';
+import RoleEntryScreen from '../screens/RoleEntryScreen';
 import type { Order } from '../models/order';
 
 export type RiderStackParamList = {
+  RoleEntry: undefined;
   RiderDashboard: undefined;
   RiderRequests: undefined;
   RiderAcceptedDelivery: { order: Order };
@@ -25,6 +27,7 @@ const Stack = createNativeStackNavigator<RiderStackParamList>();
 export default function RiderNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="RoleEntry"            component={RoleEntryScreen} />
       <Stack.Screen name="RiderDashboard"        component={RiderDashboardScreen} />
       <Stack.Screen name="RiderRequests"         component={RiderRequestsScreen} />
       <Stack.Screen name="RiderAcceptedDelivery" component={RiderAcceptedDeliveryScreen} />

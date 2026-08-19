@@ -16,6 +16,7 @@ import LoadingScreen from '../../../components/shared/LoadingScreen';
 import { useApiData } from '../../../hooks/useApiData';
 import { adminFetchAllOrders } from '../../../services/orderService';
 import type { Order, OrderStatus } from '../../../models';
+import { formatBDT } from '../../../utils/currency';
 
 type FilterType = 'All' | 'Pending' | 'Preparing' | 'On the Way' | 'Delivered' | 'Cancelled';
 
@@ -127,7 +128,7 @@ const AdminOrdersScreen: React.FC = () => {
         <View style={styles.orderBottom}>
           <View style={styles.orderBottomItem}>
             <Ionicons name="cash-outline" size={14} color={Colors.sellerAccent} />
-            <Text style={styles.orderAmount}>৳{item.total.toFixed(0)}</Text>
+            <Text style={styles.orderAmount}>{formatBDT(item.total)}</Text>
           </View>
           <View style={styles.orderBottomItem}>
             <Ionicons name="time-outline" size={13} color={Colors.gray} />

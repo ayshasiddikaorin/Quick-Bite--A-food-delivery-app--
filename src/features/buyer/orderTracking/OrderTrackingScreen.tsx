@@ -19,6 +19,7 @@ import { useNotifications } from '../../../context/NotificationContext';
 import { confirmOrderReceived, fetchOrderById } from '../../../services/orderService';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
 import type { OrderStatus } from '../../../models';
+import { formatBDT } from '../../../utils/currency';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 type RouteProps = RouteProp<BuyerStackParamList, 'OrderTracking'>;
@@ -223,7 +224,7 @@ const OrderTrackingScreen: React.FC = () => {
           <View style={styles.etaRight}>
             <Text style={styles.etaLabel}>ETA</Text>
             <Text style={styles.etaValue}>{ETA_LABELS[currentStep.key]}</Text>
-            <Text style={styles.etaTotal}>${total.toFixed(2)}</Text>
+            <Text style={styles.etaTotal}>{formatBDT(total)}</Text>
           </View>
         </View>
 

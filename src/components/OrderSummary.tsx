@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 
 import Colors from '../constants/colors';
+import { formatBDT } from '../utils/currency';
 
 interface Props {
   subtotal: number;
@@ -38,21 +39,21 @@ const OrderSummary: React.FC<Props> = ({
       <View style={styles.row}>
         <Text style={styles.label}>Subtotal</Text>
         <Text style={styles.value}>
-          ${subtotal.toFixed(2)}
+          {formatBDT(subtotal)}
         </Text>
       </View>
 
       <View style={styles.row}>
         <Text style={styles.label}>Delivery</Text>
         <Text style={[styles.value, deliveryFee === 0 && styles.pendingValue]}>
-          {deliveryFee === 0 ? 'At checkout' : `$${deliveryFee.toFixed(2)}`}
+          {deliveryFee === 0 ? 'At checkout' : formatBDT(deliveryFee)}
         </Text>
       </View>
 
       <View style={styles.row}>
         <Text style={styles.label}>Tax</Text>
         <Text style={styles.value}>
-          ${tax.toFixed(2)}
+          {formatBDT(tax)}
         </Text>
       </View>
 
@@ -62,7 +63,7 @@ const OrderSummary: React.FC<Props> = ({
         </Text>
 
         <Text style={styles.discount}>
-          -${discount.toFixed(2)}
+          -{formatBDT(discount)}
         </Text>
       </View>
 
@@ -74,7 +75,7 @@ const OrderSummary: React.FC<Props> = ({
         </Text>
 
         <Text style={styles.totalPrice}>
-          ${total.toFixed(2)}
+          {formatBDT(total)}
         </Text>
       </View>
 

@@ -40,6 +40,8 @@ export interface Order {
   total: number;
   status: OrderStatus;
   address: string;
+  latitude?: number;
+  longitude?: number;
   deliveryType: DeliveryType;
   paymentMethod: string;
   promoCode?: string;
@@ -58,6 +60,8 @@ export interface PlaceOrderPayload {
   tax: number;
   total: number;
   address: string;
+  latitude?: number;
+  longitude?: number;
   deliveryType: DeliveryType;
   paymentMethod: string;
   promoCode?: string;

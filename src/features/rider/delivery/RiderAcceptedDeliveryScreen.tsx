@@ -19,6 +19,7 @@ import { useNotifications } from '../../../context/NotificationContext';
 import { advanceOrderRider, fetchOrderById } from '../../../services/orderService';
 import type { Order, OrderStatus } from '../../../models/order';
 import type { RiderStackParamList } from '../../../navigation/RiderNavigator';
+import { formatBDT } from '../../../utils/currency';
 
 type NavProp = NativeStackNavigationProp<RiderStackParamList>;
 type RouteProps = RouteProp<RiderStackParamList, 'RiderAcceptedDelivery'>;
@@ -100,7 +101,7 @@ const RiderAcceptedDeliveryScreen: React.FC = () => {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stage = stageFor(order.status);
-  const payout = `৳${(order.deliveryFee ?? 0).toFixed(0)}`;
+  const payout = formatBDT(order.deliveryFee ?? 0);
   const isTerminal = order.status === 'delivered' || order.status === 'cancelled';
 
   const refreshOrder = useCallback(async () => {
@@ -218,7 +219,7 @@ const RiderAcceptedDeliveryScreen: React.FC = () => {
             </View>
             <View style={styles.totalBadge}>
               <Ionicons name="pricetag-outline" size={12} color={Colors.success} />
-              <Text style={styles.totalText}>৳{order.total.toFixed(0)}</Text>
+              <Text style={styles.totalText}>{formatBDT(order.total)}</Text>
             </View>
           </View>
 

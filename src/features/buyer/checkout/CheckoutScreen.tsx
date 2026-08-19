@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import FormModal from '../../../components/shared/FormModal';
 import InputField from '../../../components/shared/InputField';
 import PrimaryButton from '../../../components/shared/PrimaryButton';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
+import { formatBDT } from '../../../utils/currency';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 type RouteProps = RouteProp<BuyerStackParamList, 'Checkout'>;
@@ -35,7 +36,7 @@ const DELIVERY_OPTIONS: {
     key: 'standard',
     label: 'Standard Delivery',
     subtitle: 'Delivered within the estimated time',
-    fee: 2.99,
+    fee: 60,
     icon: 'bicycle-outline',
     eta: '30–45 min',
   },
@@ -43,7 +44,7 @@ const DELIVERY_OPTIONS: {
     key: 'express',
     label: 'Express Delivery',
     subtitle: 'Priority handling, faster dispatch',
-    fee: 5.99,
+    fee: 120,
     icon: 'flash-outline',
     eta: '15–20 min',
   },
@@ -80,12 +81,24 @@ const CheckoutScreen: React.FC = () => {
 
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('standard');
   const [address, setAddress] = useState('House 12, Road 5, Dhanmondi, Dhaka');
+  const [latitude, setLatitude] = useState<number | undefined>(route.params?.latitude);
+  const [longitude, setLongitude] = useState<number | undefined>(route.params?.longitude);
   const [editAddressVisible, setEditAddressVisible] = useState(false);
   const [draftAddress, setDraftAddress] = useState(address);
 
+  // Pick up the location chosen on the map screen (Checkout → MapPicker → back).
+  useEffect(() => {
+    const p = route.params;
+    if (p?.latitude != null && p?.longitude != null && p?.address) {
+      setAddress(p.address);
+      setLatitude(p.latitude);
+      setLongitude(p.longitude);
+    }
+  }, [route.params?.latitude, route.params?.longitude, route.params?.address]);
+
   const deliveryFee =
-    DELIVERY_OPTIONS.find((o) => o.key === deliveryType)?.fee ?? 2.99;
-  const total = subtotal - discount + tax + deliveryFee;
+    DELIVERY_OPTIONS.find((o) => o.key === deliveryType)?.fee ?? 60;
+  const total = Math.round(subtotal - discount + tax + deliveryFee);
 
   const handleSaveAddress = () => {
     setAddress(draftAddress);
@@ -126,17 +139,36 @@ const CheckoutScreen: React.FC = () => {
                 {address}
               </Text>
             </View>
-            <TouchableOpacity
-              style={styles.editBtn}
-              onPress={() => {
-                setDraftAddress(address);
-                setEditAddressVisible(true);
-              }}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="create-outline" size={18} color={Colors.primary} />
-              <Text style={styles.editBtnText}>Edit</Text>
-            </TouchableOpacity>
+            <View style={styles.addressActions}>
+              <TouchableOpacity
+                style={styles.editBtn}
+                onPress={() =>
+                  navigation.navigate('MapPicker', {
+                    subtotal,
+                    discount,
+                    tax,
+                    latitude,
+                    longitude,
+                    address,
+                  })
+                }
+                activeOpacity={0.8}
+              >
+                <Ionicons name="map-outline" size={16} color={Colors.primary} />
+                <Text style={styles.editBtnText}>Map</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.editBtn}
+                onPress={() => {
+                  setDraftAddress(address);
+                  setEditAddressVisible(true);
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="create-outline" size={16} color={Colors.primary} />
+                <Text style={styles.editBtnText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 
@@ -176,7 +208,7 @@ const CheckoutScreen: React.FC = () => {
               </View>
 
               <Text style={[styles.deliveryFee, active && { color: Colors.primary }]}>
-                ${opt.fee.toFixed(2)}
+                {formatBDT(opt.fee)}
               </Text>
             </TouchableOpacity>
           );
@@ -185,19 +217,19 @@ const CheckoutScreen: React.FC = () => {
         {/* ── Order Summary ─────────────────────────────────────────────── */}
         <Text style={styles.sectionLabel}>Order Summary</Text>
         <View style={styles.card}>
-          <SummaryRow label="Subtotal" value={`$${subtotal.toFixed(2)}`} />
+          <SummaryRow label="Subtotal" value={formatBDT(subtotal)} />
           <SummaryRow
             label="Discount"
-            value={`-$${discount.toFixed(2)}`}
+            value={`-${formatBDT(discount)}`}
             valueColor={Colors.success}
           />
-          <SummaryRow label="Tax" value={`$${tax.toFixed(2)}`} />
+          <SummaryRow label="Tax" value={formatBDT(tax)} />
           <SummaryRow
             label={`Delivery (${deliveryType === 'express' ? 'Express' : 'Standard'})`}
-            value={`$${deliveryFee.toFixed(2)}`}
+            value={formatBDT(deliveryFee)}
           />
           <View style={styles.divider} />
-          <SummaryRow label="Total" value={`$${total.toFixed(2)}`} bold />
+          <SummaryRow label="Total" value={formatBDT(total)} bold />
         </View>
 
         {/* ── Promo note ───────────────────────────────────────────────── */}
@@ -210,7 +242,7 @@ const CheckoutScreen: React.FC = () => {
 
         {/* ── Continue button ──────────────────────────────────────────── */}
         <PrimaryButton
-          title={`Continue to Payment  •  $${total.toFixed(2)}`}
+          title={`Continue to Payment  •  ${formatBDT(total)}`}
           onPress={() =>
             navigation.navigate('Payment', {
               subtotal,
@@ -219,6 +251,8 @@ const CheckoutScreen: React.FC = () => {
               deliveryFee,
               total,
               address,
+              latitude,
+              longitude,
               deliveryType,
             })
           }
@@ -309,6 +343,7 @@ const styles = StyleSheet.create({
   addressText: { flex: 1, gap: 2 },
   addressTitle: { fontSize: 13, fontWeight: '700', color: Colors.black },
   addressValue: { fontSize: 13, color: Colors.gray, lineHeight: 18 },
+  addressActions: { flexDirection: 'row', gap: 8 },
   editBtn: {
     flexDirection: 'row',
     alignItems: 'center',

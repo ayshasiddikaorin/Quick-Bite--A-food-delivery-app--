@@ -19,6 +19,7 @@ import { useApiData } from '../../../hooks/useApiData';
 import { useNotifications } from '../../../context/NotificationContext';
 import { fetchEarnings, fetchRiderProfile, RiderEarnings } from '../../../services/riderService';
 import type { Rider } from '../../../models/rider';
+import { formatBDT } from '../../../utils/currency';
 
 const { width: W } = Dimensions.get('window');
 
@@ -78,7 +79,7 @@ const RiderEarningsScreen: React.FC = () => {
   const handleRequestPayout = () => {
     showPopup({
       title: 'Payout Requested 💸',
-      message: `Your payout of ৳${data.totalEarnings.toLocaleString()} has been submitted and will be processed within 24 hours.`,
+      message: `Your payout of ${formatBDT(data.totalEarnings)} has been submitted and will be processed within 24 hours.`,
       variant: 'success',
       autoDismissMs: 4500,
     });
@@ -113,12 +114,12 @@ const RiderEarningsScreen: React.FC = () => {
           <View style={styles.summaryTopRow}>
             <View style={styles.summaryMainItem}>
               <Text style={styles.summaryMainLabel}>This Week</Text>
-              <Text style={styles.summaryMainValue}>৳{weeklyTotal.toLocaleString()}</Text>
+              <Text style={styles.summaryMainValue}>{formatBDT(weeklyTotal)}</Text>
             </View>
             <View style={styles.summaryDividerV} />
             <View style={styles.summaryMainItem}>
               <Text style={styles.summaryMainLabel}>All Time</Text>
-              <Text style={styles.summaryMainValue}>৳{data.totalEarnings.toLocaleString()}</Text>
+              <Text style={styles.summaryMainValue}>{formatBDT(data.totalEarnings)}</Text>
             </View>
           </View>
 
@@ -142,7 +143,7 @@ const RiderEarningsScreen: React.FC = () => {
             <View style={styles.summaryMiniItem}>
               <Ionicons name="cash-outline" size={20} color={Colors.success} />
               <View>
-                <Text style={styles.summaryMiniValue}>৳{avgPerDelivery}</Text>
+                <Text style={styles.summaryMiniValue}>{formatBDT(avgPerDelivery)}</Text>
                 <Text style={styles.summaryMiniLabel}>Avg/Delivery</Text>
               </View>
             </View>
@@ -156,7 +157,7 @@ const RiderEarningsScreen: React.FC = () => {
             <Text style={styles.chartPeriod}>This Week</Text>
             <View style={styles.growthBadge}>
               <Ionicons name="trending-up" size={13} color={Colors.riderAccent} />
-              <Text style={styles.growthText}>৳{weeklyTotal.toLocaleString()}</Text>
+              <Text style={styles.growthText}>{formatBDT(weeklyTotal)}</Text>
             </View>
           </View>
           <View style={styles.barsRow}>
@@ -204,12 +205,12 @@ const RiderEarningsScreen: React.FC = () => {
                     <Text style={[styles.dayName, isBest && { color: Colors.riderAccent }]}>
                       {day}
                     </Text>
-                    <Text style={styles.deliveryCount}>৳{amount.toLocaleString()} earned</Text>
+                    <Text style={styles.deliveryCount}>{formatBDT(amount)} earned</Text>
                   </View>
                 </View>
                 <View style={styles.listRight}>
                   <Text style={[styles.dayAmount, isBest && { color: Colors.riderAccent }]}>
-                    ৳{amount.toLocaleString()}
+                    {formatBDT(amount)}
                   </Text>
                   {isBest && (
                     <View style={styles.bestBadge}>
@@ -235,7 +236,7 @@ const RiderEarningsScreen: React.FC = () => {
           activeOpacity={0.85}
         >
           <Ionicons name="card-outline" size={20} color={Colors.white} />
-          <Text style={styles.payoutBtnText}>Request Payout  •  ৳{data.totalEarnings.toLocaleString()}</Text>
+          <Text style={styles.payoutBtnText}>Request Payout  •  {formatBDT(data.totalEarnings)}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

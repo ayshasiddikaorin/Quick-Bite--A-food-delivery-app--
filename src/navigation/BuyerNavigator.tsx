@@ -13,6 +13,7 @@ import BuyerAccountScreen from '../features/buyer/profile/BuyerAccountScreen';
 import ProfileDetailsScreen from '../screens/ProfileDetailsScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import CheckoutScreen from '../features/buyer/checkout/CheckoutScreen';
+import MapPickerScreen from '../features/buyer/checkout/MapPickerScreen';
 import PaymentScreen from '../features/buyer/checkout/PaymentScreen';
 import OrderTrackingScreen from '../features/buyer/orderTracking/OrderTrackingScreen';
 import RestaurantScreen from '../features/buyer/restaurant/RestaurantScreen';
@@ -22,11 +23,13 @@ import BuyerNotificationsScreen from '../features/buyer/profile/activity/BuyerNo
 import RoleSelectScreen from '../features/auth/RoleSelectScreen';
 import LoginScreen from '../features/auth/LoginScreen';
 import RegisterScreen from '../features/auth/RegisterScreen';
+import RoleEntryScreen from '../screens/RoleEntryScreen';
 import Colors from '../constants/colors';
 import { UserRole } from '../models';
 
 // ─── Param lists ──────────────────────────────────────────────────────────────
 export type BuyerStackParamList = {
+  RoleEntry: undefined;
   BuyerTabs: undefined;
   ProfileDetails: undefined;
   EditProfile: undefined;
@@ -41,6 +44,17 @@ export type BuyerStackParamList = {
     subtotal: number;
     discount: number;
     tax: number;
+    latitude?: number;
+    longitude?: number;
+    address?: string;
+  };
+  MapPicker: {
+    subtotal: number;
+    discount: number;
+    tax: number;
+    latitude?: number;
+    longitude?: number;
+    address?: string;
   };
   Payment: {
     subtotal: number;
@@ -49,6 +63,8 @@ export type BuyerStackParamList = {
     deliveryFee: number;
     total: number;
     address: string;
+    latitude?: number;
+    longitude?: number;
     deliveryType: 'standard' | 'express';
   };
   OrderTracking: {
@@ -56,6 +72,8 @@ export type BuyerStackParamList = {
     paymentMethod: string;
     total: number;
     address: string;
+    latitude?: number;
+    longitude?: number;
     deliveryType: 'standard' | 'express';
     isDummy?: boolean;
   };
@@ -185,6 +203,7 @@ const Stack = createNativeStackNavigator<BuyerStackParamList>();
 export default function BuyerNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="RoleEntry"         component={RoleEntryScreen} />
       <Stack.Screen name="BuyerTabs"       component={BuyerTabs} />
       <Stack.Screen name="ProfileDetails"  component={ProfileDetailsScreen} />
       <Stack.Screen name="EditProfile"     component={EditProfileScreen} />
@@ -193,6 +212,7 @@ export default function BuyerNavigator() {
       <Stack.Screen name="BuyerNotifications"  component={BuyerNotificationsScreen} />
       <Stack.Screen name="RestaurantPage"  component={RestaurantScreen} />
       <Stack.Screen name="Checkout"        component={CheckoutScreen} />
+      <Stack.Screen name="MapPicker"       component={MapPickerScreen} />
       <Stack.Screen name="Payment"         component={PaymentScreen} />
       <Stack.Screen name="OrderTracking"   component={OrderTrackingScreen} />
       <Stack.Screen name="RoleSelect"      component={RoleSelectScreen} />

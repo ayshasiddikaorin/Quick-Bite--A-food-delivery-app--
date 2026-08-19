@@ -10,6 +10,7 @@ import Colors from '../../../constants/colors';
 import { useApiData } from '../../../hooks/useApiData';
 import { fetchDeliveryHistory } from '../../../services/riderService';
 import type { Order } from '../../../models/order';
+import { formatBDT } from '../../../utils/currency';
 
 type Filter = 'all' | 'today' | 'yesterday' | 'week';
 
@@ -71,7 +72,7 @@ const HistoryCard: React.FC<{ item: HistoryItem }> = ({ item }) => (
         <Text style={styles.orderIdText}>{item.orderId}</Text>
       </View>
       <View style={styles.payoutBadge}>
-        <Text style={styles.payoutText}>৳{item.payout}</Text>
+        <Text style={styles.payoutText}>{formatBDT(item.payout)}</Text>
       </View>
     </View>
 
@@ -191,12 +192,12 @@ const RiderDeliveryHistoryScreen: React.FC = () => {
                 </View>
                 <View style={styles.stripDivider} />
                 <View style={styles.stripItem}>
-                  <Text style={styles.stripValue}>৳{totalPayout.toFixed(2)}</Text>
+                  <Text style={styles.stripValue}>{formatBDT(totalPayout)}</Text>
                   <Text style={styles.stripLabel}>Earned</Text>
                 </View>
                 <View style={styles.stripDivider} />
                 <View style={styles.stripItem}>
-                  <Text style={styles.stripValue}>৳{avgPayout.toFixed(2)}</Text>
+                  <Text style={styles.stripValue}>{formatBDT(avgPayout)}</Text>
                   <Text style={styles.stripLabel}>Avg Fee</Text>
                 </View>
               </View>

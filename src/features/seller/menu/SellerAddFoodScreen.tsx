@@ -141,7 +141,7 @@ const SellerAddFoodScreen: React.FC = () => {
             error={errors.name}
           />
           <InputField
-            label="Price (৳)"
+            label="Price (BDT)"
             icon="cash-outline"
             value={price}
             onChangeText={(v) => { setPrice(v); setErrors((e) => ({ ...e, price: '' })); }}

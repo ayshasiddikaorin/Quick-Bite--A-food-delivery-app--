@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../../constants/colors';
 import { CartItem } from '../../../models';
 import { safeImageUri } from '../../../utils/image';
+import { formatBDT } from '../../../utils/currency';
 
 interface Props {
   item: CartItem;
@@ -57,7 +58,7 @@ const CartItemCard: React.FC<Props> = ({
         </View>
 
         <Text style={styles.price}>
-          ${item.price.toFixed(2)}
+          {formatBDT(item.price)}
         </Text>
 
       </View>

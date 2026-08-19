@@ -22,6 +22,7 @@ import type { RiderStackParamList } from '../../../navigation/RiderNavigator';
 import { useApiData } from '../../../hooks/useApiData';
 import { fetchRiderStats, toggleOnline } from '../../../services/riderService';
 import type { RiderStats } from '../../../models/dashboard';
+import { formatBDT } from '../../../utils/currency';
 
 type NavProp = NativeStackNavigationProp<RiderStackParamList>;
 const { width: W } = Dimensions.get('window');
@@ -163,8 +164,8 @@ const RiderDashboardScreen: React.FC = () => {
         <View style={styles.statsGrid}>
           <StatCard label="New Requests"      value={s.newRequests}                       icon="notifications-outline" color={Colors.riderAccent} bg={Colors.infoLight}   />
           <StatCard label="Active Deliveries" value={s.activeDeliveries}                  icon="bicycle-outline"       color={Colors.warning}     bg="#FFF8E1"             />
-          <StatCard label="Today's Income"    value={`৳${s.todayIncome.toLocaleString()}`} icon="cash-outline"          color={Colors.success}     bg={Colors.successLight} />
-          <StatCard label="This Week"         value={`৳${weeklyTotal.toLocaleString()}`}   icon="trending-up-outline"   color={Colors.riderAccent} bg={Colors.infoLight}   />
+          <StatCard label="Today's Income"    value={formatBDT(s.todayIncome)} icon="cash-outline"          color={Colors.success}     bg={Colors.successLight} />
+          <StatCard label="This Week"         value={formatBDT(weeklyTotal)}   icon="trending-up-outline"   color={Colors.riderAccent} bg={Colors.infoLight}   />
         </View>
 
         {/* Quick Actions */}
@@ -194,7 +195,7 @@ const RiderDashboardScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>Weekly Earnings</Text>
         <View style={styles.chartCard}>
           <View style={styles.chartHeader}>
-            <Text style={styles.chartTotal}>৳{weeklyTotal.toLocaleString()}</Text>
+            <Text style={styles.chartTotal}>{formatBDT(weeklyTotal)}</Text>
             <View style={styles.growthBadge}>
               <Ionicons name="trending-up" size={14} color={Colors.riderAccent} />
               <Text style={styles.growthText}>This week</Text>

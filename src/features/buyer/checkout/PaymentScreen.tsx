@@ -23,6 +23,7 @@ import { clearCart, getCart } from '../../../storage/cartStorage';
 import { placeOrder } from '../../../services/orderService';
 import type { CartItem } from '../../../models/cart';
 import type { OrderItem, PlaceOrderPayload } from '../../../models/order';
+import { formatBDT } from '../../../utils/currency';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 type RouteProps = RouteProp<BuyerStackParamList, 'Payment'>;
@@ -87,7 +88,7 @@ const PaymentScreen: React.FC = () => {
   const { user } = useAuth();
   const { showPopup } = useNotifications();
 
-  const { subtotal, discount, tax, deliveryFee, total, address, deliveryType } =
+  const { subtotal, discount, tax, deliveryFee, total, address, latitude, longitude, deliveryType } =
     route.params;
 
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('cod');
@@ -152,6 +153,8 @@ const PaymentScreen: React.FC = () => {
         tax,
         total,
         address,
+        latitude,
+        longitude,
         deliveryType,
         paymentMethod: selectedMethod === 'cod' ? 'Cash on Delivery' : selectedOption.label,
       };
@@ -180,6 +183,8 @@ const PaymentScreen: React.FC = () => {
               paymentMethod: selectedOption.label,
               total,
               address,
+              latitude,
+              longitude,
               deliveryType,
               isDummy: false,
             },
@@ -207,6 +212,8 @@ const PaymentScreen: React.FC = () => {
               paymentMethod: selectedOption.label,
               total,
               address,
+              latitude,
+              longitude,
               deliveryType,
               isDummy: true,
             },
@@ -240,15 +247,14 @@ const PaymentScreen: React.FC = () => {
         {/* ── Total payable card ───────────────────────────────────────── */}
         <View style={styles.totalCard}>
           <Text style={styles.totalLabel}>Total Payable</Text>
-          <Text style={styles.totalAmount}>${total.toFixed(2)}</Text>
+          <Text style={styles.totalAmount}>{formatBDT(total)}</Text>
           <View style={styles.totalBreakdown}>
             <Text style={styles.breakdownText}>
-              Subtotal ${subtotal.toFixed(2)}  ·  Delivery ${deliveryFee.toFixed(2)}  ·  Tax $
-              {tax.toFixed(2)}
+              Subtotal {formatBDT(subtotal)}  ·  Delivery {formatBDT(deliveryFee)}  ·  Tax {formatBDT(tax)}
             </Text>
             {discount > 0 && (
               <Text style={styles.discountText}>
-                Discount −${discount.toFixed(2)} applied
+                Discount −{formatBDT(discount)} applied
               </Text>
             )}
           </View>
@@ -334,7 +340,7 @@ const PaymentScreen: React.FC = () => {
             <>
               <Ionicons name="checkmark-circle-outline" size={20} color={Colors.white} />
               <Text style={styles.placeOrderText}>
-                Place Order  ·  ${total.toFixed(2)}
+                Place Order  ·  {formatBDT(total)}
               </Text>
             </>
           )}
@@ -345,7 +351,7 @@ const PaymentScreen: React.FC = () => {
       <ConfirmModal
         visible={showConfirm}
         title="Confirm Order"
-        message={`Pay $${total.toFixed(2)} via ${selectedOption.label}?\n\nDelivery to: ${address}`}
+        message={`Pay ${formatBDT(total)} via ${selectedOption.label}?\n\nDelivery to: ${address}`}
         confirmText="Yes, Place Order"
         cancelText="Cancel"
         variant="success"

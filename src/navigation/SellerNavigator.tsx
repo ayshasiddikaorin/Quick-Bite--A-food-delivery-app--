@@ -9,9 +9,11 @@ import SellerSalesScreen from '../features/seller/sales/SellerSalesScreen';
 import SellerRestaurantSetupScreen from '../features/seller/setup/SellerRestaurantSetupScreen';
 import SellerOffersScreen from '../features/seller/offers/SellerOffersScreen';
 import SellerEditProfileScreen from '../features/seller/profile/SellerEditProfileScreen';
+import RoleEntryScreen from '../screens/RoleEntryScreen';
 import type { MenuItem } from '../models';
 
 export type SellerStackParamList = {
+  RoleEntry: undefined;
   SellerDashboard: undefined;
   SellerRestaurantSetup: { editing?: boolean } | undefined;
   SellerOrders: undefined;
@@ -27,6 +29,7 @@ const Stack = createNativeStackNavigator<SellerStackParamList>();
 export default function SellerNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="RoleEntry" component={RoleEntryScreen} />
       <Stack.Screen name="SellerDashboard" component={SellerDashboardScreen} />
       <Stack.Screen name="SellerRestaurantSetup" component={SellerRestaurantSetupScreen} />
       <Stack.Screen name="SellerOrders" component={SellerOrdersScreen} />

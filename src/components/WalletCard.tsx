@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Colors from "../constants/colors";
+import { formatBDT } from "../utils/currency";
 
 interface Props {
   balance: number;
@@ -26,7 +27,7 @@ const WalletCard: React.FC<Props> = ({ balance }) => {
           </View>
         </View>
 
-        <Text style={styles.balance}>${balance.toFixed(2)}</Text>
+        <Text style={styles.balance}>{formatBDT(balance)}</Text>
 
         <View style={styles.actionRow}>
           <TouchableOpacity style={styles.actionBtn} activeOpacity={0.8}>

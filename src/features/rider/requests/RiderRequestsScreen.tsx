@@ -21,6 +21,7 @@ import { useNotifications } from '../../../context/NotificationContext';
 import { fetchRiderAvailableOrders, acceptDelivery } from '../../../services/orderService';
 import type { Order } from '../../../models/order';
 import type { RiderStackParamList } from '../../../navigation/RiderNavigator';
+import { formatBDT } from '../../../utils/currency';
 
 type NavProp = NativeStackNavigationProp<RiderStackParamList>;
 
@@ -35,7 +36,7 @@ function timeAgo(iso: string): string {
 
 /** Format the delivery payout shown to the rider (deliveryFee is the rider's share). */
 function payoutFor(order: Order): string {
-  return `৳${(order.deliveryFee ?? 0).toFixed(0)}`;
+  return formatBDT(order.deliveryFee ?? 0);
 }
 
 function orderLabel(order: Order): string {

@@ -10,6 +10,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { RecommendedItem } from '../models';
 import Colors from '../constants/colors';
 import { safeImageUri } from '../utils/image';
+import { formatBDT } from '../utils/currency';
 
 interface Props {
   item: RecommendedItem;
@@ -67,7 +68,7 @@ const RecommendedCard: React.FC<Props> = ({ item, onPress }) => {
         </TouchableOpacity>
 
         <View style={styles.priceContainer}>
-          <Text style={styles.price}>${item.price.toFixed(2)}</Text>
+          <Text style={styles.price}>{formatBDT(item.price)}</Text>
           {/* Arrow indicates tapping opens restaurant */}
           <View style={styles.addBtn}>
             <Ionicons name="chevron-forward" size={16} color={Colors.white} />

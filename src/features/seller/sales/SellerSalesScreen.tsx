@@ -16,6 +16,7 @@ import LoadingScreen from '../../../components/shared/LoadingScreen';
 import { useApiData } from '../../../hooks/useApiData';
 import { fetchSellerStats } from '../../../services/orderService';
 import type { SellerStats } from '../../../models';
+import { formatBDT } from '../../../utils/currency';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -80,7 +81,7 @@ const SellerSalesScreen: React.FC = () => {
           <View style={styles.totalCardTop}>
             <View>
               <Text style={styles.totalLabel}>Weekly Total Sales</Text>
-              <Text style={styles.totalAmount}>৳{weeklyTotal.toLocaleString()}</Text>
+              <Text style={styles.totalAmount}>{formatBDT(weeklyTotal)}</Text>
             </View>
             <View style={styles.growthBadge}>
               <Ionicons name="trending-up" size={16} color={Colors.sellerAccent} />

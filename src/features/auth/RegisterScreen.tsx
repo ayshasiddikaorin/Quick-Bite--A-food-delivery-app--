@@ -99,7 +99,6 @@ const RegisterScreen: React.FC = () => {
         restaurantName: form.restaurantName.trim() || undefined,
         vehicleType: form.vehicleType.trim() || undefined,
       });
-      if (navigation.canGoBack()) navigation.goBack();
     } catch (error: any) {
       showPopup({
         title: 'Registration Failed',

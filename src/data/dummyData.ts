@@ -179,7 +179,7 @@ export const offers: OfferItem[] = [
 
 export const banners: BannerItem[] = [
   { id: '1', image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=800&q=80', title: 'Big Burger Deal',  subtitle: 'Get 30% off on all burgers today!',     bgColor: '#FF6B35', restaurantId: 'r1' },
-  { id: '2', image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80', title: 'Pizza Fiesta',    subtitle: 'Free delivery on orders above $20',     bgColor: '#E85520', restaurantId: 'r2' },
+  { id: '2', image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800&q=80', title: 'Pizza Fiesta',    subtitle: 'Free delivery on orders above BDT 500',     bgColor: '#E85520', restaurantId: 'r2' },
   { id: '3', image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800&q=80', title: 'Sushi Night',     subtitle: 'Premium sushi at special prices',       bgColor: '#FF8C5A', restaurantId: 'r3' },
   { id: '4', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80',    title: 'Thai Special',    subtitle: 'All noodle dishes 20% off today!',      bgColor: '#4CAF50', restaurantId: 'r5' },
 ];

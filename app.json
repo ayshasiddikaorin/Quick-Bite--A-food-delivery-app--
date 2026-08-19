@@ -31,7 +31,14 @@
           "microphonePermission": false
         }
       ],
-      "expo-font"
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow QuickBite to use your location to set your delivery address."
+        }
+      ],
+      "expo-font",
+      "@maplibre/maplibre-react-native"
     ],
     "extra": {
       "eas": {

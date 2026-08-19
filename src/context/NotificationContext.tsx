@@ -16,6 +16,7 @@ import {
   fetchRiderActiveOrders,
 } from '../services/orderService';
 import type { Order } from '../models/order';
+import { formatBDT } from '../utils/currency';
 
 export interface NotificationItem {
   id: string;
@@ -172,7 +173,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
               knownOrderIds.current.add(ord.id);
               addNotification({
                 title: 'New Order Received! 🔔',
-                message: `Order #${ord.id.slice(-6)} received from ${ord.customerName || 'Customer'} ($${ord.total.toFixed(2)})`,
+                message: `Order #${ord.id.slice(-6)} received from ${ord.customerName || 'Customer'} (${formatBDT(ord.total)})`,
                 type: 'new_order',
                 orderId: ord.id,
                 role: 'seller',

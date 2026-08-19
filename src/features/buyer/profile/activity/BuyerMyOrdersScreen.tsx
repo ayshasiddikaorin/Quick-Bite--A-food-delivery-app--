@@ -18,6 +18,7 @@ import { useApiData } from '../../../../hooks/useApiData';
 import { fetchMyOrders } from '../../../../services/orderService';
 import type { Order, OrderStatus } from '../../../../models';
 import type { BuyerStackParamList } from '../../../../navigation/BuyerNavigator';
+import { formatBDT } from '../../../../utils/currency';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 
@@ -128,7 +129,7 @@ const BuyerMyOrdersScreen: React.FC = () => {
         </View>
 
         <View style={styles.cardRight}>
-          <Text style={styles.total}>৳{item.total.toFixed(0)}</Text>
+          <Text style={styles.total}>{formatBDT(item.total)}</Text>
           {isActive && (
             <Ionicons name="navigate-outline" size={16} color={Colors.primary} />
           )}

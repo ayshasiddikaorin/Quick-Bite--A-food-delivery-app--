@@ -27,6 +27,7 @@ import { useApiData } from '../../../hooks/useApiData';
 import { fetchMyOrders } from '../../../services/orderService';
 import type { UserProfile, Order, OrderStatus } from '../../../models';
 import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
+import { formatBDT } from '../../../utils/currency';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 
@@ -211,7 +212,7 @@ const BuyerAccountScreen: React.FC = () => {
                 </View>
               </View>
               <View style={styles.liveBottom}>
-                <Text style={styles.liveTotal}>৳{activeOrder.total.toFixed(0)}</Text>
+                <Text style={styles.liveTotal}>{formatBDT(activeOrder.total)}</Text>
                 <TouchableOpacity
                   style={styles.trackBtn}
                   onPress={() => trackOrder(activeOrder)}
@@ -244,7 +245,7 @@ const BuyerAccountScreen: React.FC = () => {
                     </Text>
                   </View>
                   <View style={styles.historyRight}>
-                    <Text style={styles.historyTotal}>৳{order.total.toFixed(0)}</Text>
+                    <Text style={styles.historyTotal}>{formatBDT(order.total)}</Text>
                     <Text style={[styles.historyStatus, { color: STATUS_COLOR[order.status] }]}>
                       {STATUS_LABEL[order.status]}
                     </Text>

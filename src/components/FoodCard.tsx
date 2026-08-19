@@ -11,6 +11,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { FoodItem } from '../models';
 import Colors from '../constants/colors';
 import { safeImageUri } from '../utils/image';
+import { formatBDT } from '../utils/currency';
 
 interface Props {
   item: FoodItem;
@@ -74,7 +75,7 @@ const FoodCard: React.FC<Props> = ({ item, onPress, onFavoritePress }) => {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.price}>${item.price.toFixed(2)}</Text>
+          <Text style={styles.price}>{formatBDT(item.price)}</Text>
           {/* Tap the whole card to open restaurant — no separate add btn needed */}
           <View style={styles.addBtn}>
             <Ionicons name="chevron-forward" size={16} color={Colors.white} />

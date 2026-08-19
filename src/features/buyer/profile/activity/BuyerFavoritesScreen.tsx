@@ -22,6 +22,7 @@ import type { BuyerStackParamList } from '../../../../navigation/BuyerNavigator'
 import { useAuth } from '../../../../context/AuthContext';
 import { useNotifications } from '../../../../context/NotificationContext';
 import { safeImageUri } from '../../../../utils/image';
+import { formatBDT } from '../../../../utils/currency';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 
@@ -156,7 +157,7 @@ const BuyerFavoritesScreen: React.FC = () => {
                   </View>
                   <View style={styles.metaItem}>
                     <Ionicons name="bicycle-outline" size={12} color={Colors.gray} />
-                    <Text style={styles.metaText}>৳{item.deliveryFee.toFixed(0)}</Text>
+                    <Text style={styles.metaText}>{formatBDT(item.deliveryFee)}</Text>
                   </View>
                 </View>
               </View>

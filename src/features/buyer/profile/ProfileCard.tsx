@@ -13,6 +13,7 @@ import { useNavigation } from '@react-navigation/native';
 import { UserProfile } from '../../../models';
 import Colors from '../../../constants/colors';
 import { safeImageUri } from '../../../utils/image';
+import { formatBDT } from '../../../utils/currency';
 
 interface Props {
   user: UserProfile;
@@ -132,7 +133,7 @@ const ProfileCard: React.FC<Props> = ({ user }) => {
 
         <View style={styles.statItem}>
           <Text style={styles.statValue}>
-            ${user.walletBalance.toFixed(2)}
+            {formatBDT(user.walletBalance)}
           </Text>
 
           <Text style={styles.statLabel}>

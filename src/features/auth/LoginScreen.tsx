@@ -63,7 +63,6 @@ const LoginScreen: React.FC = () => {
     setLoading(true);
     try {
       await login(email.trim(), password, role);
-      if (navigation.canGoBack()) navigation.goBack();
     } catch (error: any) {
       showPopup({
         title: 'Sign In Failed',

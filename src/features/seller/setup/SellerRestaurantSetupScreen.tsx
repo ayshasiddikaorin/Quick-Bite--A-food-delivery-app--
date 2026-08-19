@@ -286,7 +286,7 @@ const SellerRestaurantSetupScreen: React.FC = () => {
             error={errors.deliveryTime}
           />
           <InputField
-            label="Delivery Fee (৳)"
+            label="Delivery Fee (BDT)"
             icon="bicycle-outline"
             value={form.deliveryFee}
             onChangeText={set('deliveryFee')}
@@ -295,7 +295,7 @@ const SellerRestaurantSetupScreen: React.FC = () => {
             error={errors.deliveryFee}
           />
           <InputField
-            label="Minimum Order (৳)"
+            label="Minimum Order (BDT)"
             icon="cart-outline"
             value={form.minOrder}
             onChangeText={set('minOrder')}

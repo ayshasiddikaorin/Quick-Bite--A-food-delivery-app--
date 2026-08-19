@@ -27,6 +27,7 @@ import type { BuyerStackParamList } from '../../../navigation/BuyerNavigator';
 import { useAuth } from '../../../context/AuthContext';
 import { useNotifications } from '../../../context/NotificationContext';
 import { safeImageUri } from '../../../utils/image';
+import { formatBDT } from '../../../utils/currency';
 
 type NavProp = NativeStackNavigationProp<BuyerStackParamList>;
 type RouteProps = RouteProp<BuyerStackParamList, 'RestaurantPage'>;
@@ -66,8 +67,8 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, offerDiscount, onAdd,
         <Text style={cardStyles.desc} numberOfLines={2}>{item.description}</Text>
         <View style={cardStyles.footer}>
           <View>
-            {discount > 0 && <Text style={cardStyles.originalPrice}>${item.price.toFixed(2)}</Text>}
-            <Text style={cardStyles.price}>${finalPrice.toFixed(2)}</Text>
+            {discount > 0 && <Text style={cardStyles.originalPrice}>{formatBDT(item.price)}</Text>}
+            <Text style={cardStyles.price}>{formatBDT(finalPrice)}</Text>
           </View>
           {qty > 0 ? (
             <View style={cardStyles.qtyRow}>
@@ -369,13 +370,13 @@ const RestaurantScreen: React.FC = () => {
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Ionicons name="bicycle-outline" size={14} color={Colors.gray} />
-              <Text style={styles.statValue}>${restaurant.deliveryFee.toFixed(2)}</Text>
+              <Text style={styles.statValue}>{formatBDT(restaurant.deliveryFee)}</Text>
               <Text style={styles.statLabel}>delivery</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Ionicons name="bag-outline" size={14} color={Colors.gray} />
-              <Text style={styles.statLabel}>Min ${restaurant.minOrder}</Text>
+              <Text style={styles.statLabel}>Min {formatBDT(restaurant.minOrder)}</Text>
             </View>
           </View>
           <View style={styles.addressRow}>

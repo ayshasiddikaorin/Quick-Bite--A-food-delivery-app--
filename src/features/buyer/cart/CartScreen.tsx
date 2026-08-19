@@ -31,7 +31,7 @@ import {
 import Colors from '../../../constants/colors';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const TAX_RATE = 0.08;
+const TAX_RATE = 0.15;
 
 // Valid promo codes: code → discount percentage
 const PROMO_CODES: Record<string, number> = {
@@ -127,9 +127,9 @@ const CartScreen: React.FC = () => {
   }, [showPopup]);
 
   // ── Calculations ──────────────────────────────────────────────────────────
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const discountAmount = parseFloat(((subtotal * discountPercent) / 100).toFixed(2));
-  const tax = parseFloat(((subtotal - discountAmount) * TAX_RATE).toFixed(2));
+  const subtotal = Math.round(cart.reduce((sum, item) => sum + item.price * item.quantity, 0));
+  const discountAmount = Math.round((subtotal * discountPercent) / 100);
+  const tax = Math.round((subtotal - discountAmount) * TAX_RATE);
   const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
 
   const handleCheckout = useCallback(() => {

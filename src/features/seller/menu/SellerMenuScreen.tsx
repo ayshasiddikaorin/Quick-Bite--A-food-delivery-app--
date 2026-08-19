@@ -27,6 +27,7 @@ import type { MenuItem } from '../../../models';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { SellerStackParamList } from '../../../navigation/SellerNavigator';
 import { safeImageUri } from '../../../utils/image';
+import { formatBDT } from '../../../utils/currency';
 
 type NavProp = NativeStackNavigationProp<SellerStackParamList>;
 
@@ -126,7 +127,7 @@ const SellerMenuScreen: React.FC = () => {
             <View style={styles.cardInfo}>
               <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
               <Text style={styles.itemCat}>{item.category}</Text>
-              <Text style={styles.itemPrice}>৳{item.price}</Text>
+              <Text style={styles.itemPrice}>{formatBDT(item.price)}</Text>
             </View>
             <View style={styles.cardActions}>
               {busy === item.id ? (

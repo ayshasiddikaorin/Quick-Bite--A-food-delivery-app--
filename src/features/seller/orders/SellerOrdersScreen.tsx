@@ -18,6 +18,7 @@ import { useNotifications } from '../../../context/NotificationContext';
 import { useApiData } from '../../../hooks/useApiData';
 import { fetchSellerOrders, advanceOrderSeller, cancelOrder, confirmRiderPickup } from '../../../services/orderService';
 import type { Order, OrderStatus } from '../../../models';
+import { formatBDT } from '../../../utils/currency';
 
 const EMPTY_ORDERS: Order[] = [];
 
@@ -179,7 +180,7 @@ const SellerOrdersScreen: React.FC = () => {
               {item.items.map((i) => `${i.name} x${i.quantity}`).join(', ') || 'Items details unavailable'}
             </Text>
             <View style={styles.orderBottom}>
-              <Text style={styles.orderTotal}>৳{item.total.toFixed(0)}</Text>
+              <Text style={styles.orderTotal}>{formatBDT(item.total)}</Text>
               <View style={styles.actionsRow}>
                 {activeTab === 'new' && item.status === 'pending' && (
                   <TouchableOpacity

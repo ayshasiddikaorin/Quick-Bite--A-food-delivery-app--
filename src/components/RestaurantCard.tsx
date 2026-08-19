@@ -4,6 +4,7 @@ import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { RestaurantData } from '../models';
 import Colors from '../constants/colors';
 import { safeImageUri } from '../utils/image';
+import { formatBDT } from '../utils/currency';
 
 interface Props {
   restaurant: RestaurantData;
@@ -46,7 +47,7 @@ const RestaurantCard: React.FC<Props> = ({ restaurant, onPress }) => {
           </View>
           <View style={styles.feeRow}>
             <Ionicons name="bicycle-outline" size={13} color={Colors.gray} />
-            <Text style={styles.feeText}>${restaurant.deliveryFee.toFixed(2)}</Text>
+            <Text style={styles.feeText}>{formatBDT(restaurant.deliveryFee)}</Text>
           </View>
           <View style={styles.addBtn}>
             <Ionicons name="chevron-forward" size={15} color={Colors.white} />

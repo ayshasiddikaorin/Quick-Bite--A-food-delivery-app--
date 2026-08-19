@@ -23,6 +23,7 @@ import { fetchSellerStats } from '../../../services/orderService';
 import { fetchMyRestaurant, toggleRestaurantOpen } from '../../../services/restaurantService';
 import { ApiError } from '../../../services/apiClient';
 import type { SellerStats, Restaurant } from '../../../models';
+import { formatBDT } from '../../../utils/currency';
 import type { SellerStackParamList } from '../../../navigation/SellerNavigator';
 
 type NavProp = NativeStackNavigationProp<SellerStackParamList>;
@@ -185,14 +186,14 @@ const SellerDashboardScreen: React.FC = () => {
           <StatCard label="New Orders" value={stats.newOrders} icon="receipt-outline" color="#FF6B00" bg="#FFF3EE" />
           <StatCard label="Preparing" value={stats.preparing} icon="restaurant-outline" color="#FF9800" bg="#FFF3E0" />
           <StatCard label="Completed" value={stats.completed} icon="checkmark-circle-outline" color={Colors.success} bg={Colors.successLight} />
-          <StatCard label="Total Sales" value={`৳${stats.totalSales.toLocaleString()}`} icon="cash-outline" color={Colors.sellerAccent} bg={Colors.successLight} />
+          <StatCard label="Total Sales" value={formatBDT(stats.totalSales)} icon="cash-outline" color={Colors.sellerAccent} bg={Colors.successLight} />
         </View>
 
         {/* Weekly Chart */}
         <Text style={styles.sectionTitle}>Weekly Sales</Text>
         <View style={styles.chartCard}>
           <View style={styles.chartHeader}>
-            <Text style={styles.chartTotal}>৳{weeklyTotal.toLocaleString()}</Text>
+            <Text style={styles.chartTotal}>{formatBDT(weeklyTotal)}</Text>
             <View style={styles.growthBadge}>
               <Ionicons name="trending-up" size={14} color={Colors.success} />
               <Text style={styles.growthText}>{weeklyTotal} orders</Text>
