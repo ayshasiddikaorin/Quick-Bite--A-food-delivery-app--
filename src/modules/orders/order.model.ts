@@ -26,6 +26,8 @@ export interface IOrder extends Document {
   total: number;
   status: OrderStatus;
   address: string;
+  latitude?: number;
+  longitude?: number;
   deliveryType: DeliveryType;
   paymentMethod: string;
   promoCode?: string;
@@ -62,6 +64,8 @@ const orderSchema = new Schema<IOrder>(
       default: 'pending',
     },
     address: { type: String, required: true },
+    latitude: { type: Number },
+    longitude: { type: Number },
     deliveryType: { type: String, enum: ['standard', 'express'] as DeliveryType[], default: 'standard' as DeliveryType },
     paymentMethod: { type: String, default: 'Cash on Delivery' },
     promoCode: { type: String },

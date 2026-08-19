@@ -53,6 +53,8 @@ export class OrderService {
       tax:            dto.tax,
       total:          dto.total,
       address:        dto.address,
+      latitude:       dto.latitude,
+      longitude:      dto.longitude,
       deliveryType:   dto.deliveryType,
       paymentMethod:  dto.paymentMethod,
       promoCode:      dto.promoCode,

@@ -12,6 +12,7 @@ import { orderRoutes } from './modules/orders/order.routes';
 import { riderRoutes } from './modules/riders/rider.routes';
 import { adminRoutes } from './modules/admin/admin.routes';
 import { uploadRoutes } from './modules/uploads/upload.routes';
+import { geocodeRoutes } from './modules/geocode/geocode.routes';
 import { errorHandler } from './shared/middleware/errorHandler';
 import mongoose from 'mongoose';
 import { connectDB } from './shared/db/connect';
@@ -67,6 +68,7 @@ export function createApp() {
   app.use('/api/v1/riders', riderRoutes);
   app.use('/api/v1/admin', adminRoutes);
   app.use('/api/v1/uploads', uploadRoutes);
+  app.use('/api/v1/geocode', geocodeRoutes);
 
   // Health check
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
